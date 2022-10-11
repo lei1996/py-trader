@@ -9,8 +9,8 @@ from config.huobi import ACCESS_KEY, SECRET_KEY
 close = 0
 max_cnt = 5
 direction = 'sell'
-margin_call = 0.01
-close_call = 0.005
+margin_call = 0.02
+close_call = 0.01
 symbol = 'XRP-USD'
 
 
@@ -42,6 +42,8 @@ class Martingale:
                     self.price_lists, self.price_lists[-1] + (self.price_lists[-1] * margin_call))
 
     def is_add_open(self, price):  # 是否加仓
+        if self.curr >= self.max_cnt:
+            return []
         if self.direction == 'buy':
             return self.price_lists[self.price_lists >= price]
         else:
@@ -63,6 +65,8 @@ class Martingale:
             return price < (avg_price - (avg_price * self.close_call))
 
     def curr_open(self):  # 当前开仓
+        if self.curr == 0:
+            return 0
         return sum(self.bs[:self.curr])
 
 
@@ -84,9 +88,9 @@ def order(symbol: str, volume: int, offset: str, direction: str, price):  # 下�
         "volume": volume,
         "direction": direction,
         "offset": offset,
-        "price": close,
+        # "price": close,
         "lever_rate": 50,
-        "order_price_type": 'post_only'
+        "order_price_type": 'optimal_20'
     })
 
 
