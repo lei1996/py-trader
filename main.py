@@ -11,7 +11,7 @@ max_cnt = 5
 direction = 'sell'
 margin_call = 0.01
 close_call = 0.005
-symbol = 'BTC-USD'
+symbol = 'XRP-USD'
 
 
 class RepeatTimer(Timer):
@@ -58,9 +58,9 @@ class Martingale:
         avg_price = result / sum(self.bs[:self.curr])
 
         if self.direction == 'buy':
-            return price > avg_price
+            return price > (avg_price + (avg_price * self.close_call))
         else:
-            return price < avg_price
+            return price < (avg_price - (avg_price * self.close_call))
 
     def curr_open(self):  # 当前开仓
         return sum(self.bs[:self.curr])
@@ -85,7 +85,7 @@ def order(symbol: str, volume: int, offset: str, direction: str, price):  # 下�
         "direction": direction,
         "offset": offset,
         "price": close,
-        "lever_rate": 10,
+        "lever_rate": 50,
         "order_price_type": 'post_only'
     })
 
@@ -123,10 +123,13 @@ def main():
     elif len(martingale.is_add_open(close)) > martingale.curr:
         order_result = order(symbol=symbol, volume=martingale.bs[martingale.curr], offset='open',
                              direction=direction, price=close)
-        print(f"open order_result: {order_result}")
+        print(
+            f"open order_result: {order_result}, volume: {martingale.bs[martingale.curr]}")
         if order_result.get('status') == 'ok':
             martingale.curr += 1
 
+
+print(accountClient.get_balance_valuation())
 
 print(martingale.price_lists)
 
