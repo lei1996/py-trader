@@ -9,7 +9,7 @@ from config.huobi import ACCESS_KEY, SECRET_KEY
 close = 0
 max_cnt = 5
 direction = 'sell'
-margin_call = 0.02
+margin_call = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08]
 close_call = [0.01, 0.008, 0.005, 0.002, 0.001, -0.001, -0.002, -0.005]
 bs = [1, 2, 4, 8, 16, 32, 64, 128]
 symbol = 'XRP-USD'
@@ -37,10 +37,10 @@ class Martingale:
         for i in range(1, max_cnt):
             if self.direction == 'buy':
                 self.price_lists = np.append(
-                    self.price_lists, self.price_lists[-1] - (self.price_lists[-1] * margin_call))
+                    self.price_lists, self.price_lists[-1] - (self.price_lists[-1] * margin_call[i]))
             else:
                 self.price_lists = np.append(
-                    self.price_lists, self.price_lists[-1] + (self.price_lists[-1] * margin_call))
+                    self.price_lists, self.price_lists[-1] + (self.price_lists[-1] * margin_call[i]))
 
     def is_add_open(self, price):  # 是否加仓
         if self.curr >= self.max_cnt:
@@ -138,7 +138,7 @@ def main():
             martingale.curr += 1
 
 
-print(accountClient.get_balance_valuation())
+print(accountClient.get_balance_valuation({"valuation_asset": 'USD'}))
 
 print(martingale.price_lists)
 
