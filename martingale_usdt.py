@@ -1,16 +1,25 @@
-import time
-import sys
 import os
+import sys
+import time
+import argparse
 import numpy as np
 from threading import Timer
 from huobi.linear_swap.rest import account, market, order
 from config.linairx001 import ACCESS_KEY, SECRET_KEY
 
-symbol = 'CLV-USDT'
-max_cnt = 10
-direction = 'sell'
-margin_call = np.linspace(0, 0.02, num=max_cnt).tolist()
-close_call = np.linspace(0.02, 0.01, num=max_cnt).tolist()
+parser = argparse.ArgumentParser()
+parser.add_argument('--symbol', help='品种代码 like: HT')
+parser.add_argument('--max_cnt', help='最大开仓次数', type=int)
+parser.add_argument('--direction', help='开仓方向 buy | sell')
+parser.add_argument('--margin_call', help='跌 | 涨 x% 补仓, 0.01, 0.02, 0.03')
+parser.add_argument('--close_call', help='获利多少平仓 0.01, 0.02, 0.03')
+args = parser.parse_args()
+
+symbol = args.symbol + '-USDT'
+max_cnt = args.max_cnt
+direction = args.direction
+margin_call = [float(item) for item in args.margin_call.split(',')]
+close_call = [float(item) for item in args.close_call.split(',')]
 bs = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192][:max_cnt]
 price_lists = np.array([])  # 开仓价格列表
 close_lists = np.array([])  # 平仓价格列表
@@ -18,6 +27,14 @@ order_lists = []  # 订单列表
 order_id = ''  # 平仓id
 precision = 0  # 价格精度
 curr = 0  # 当前开仓数
+
+
+print(symbol)
+print(max_cnt)
+print(direction)
+print(margin_call)
+print(close_call)
+
 
 client = market.Market()
 orderClient = order.Order(ACCESS_KEY,
@@ -58,7 +75,7 @@ def order(symbol: str, volume: int, offset: str, direction: str, price):  # 下�
         "direction": direction,
         "offset": offset,
         "price": price,
-        "lever_rate": 10,
+        "lever_rate": 20,
         "order_price_type": 'limit'
     })
 
@@ -158,10 +175,10 @@ def main():  # 定时监控订单状态
 
     cnt = 0
     for orderId in order_lists:
-        result = cross_get_order_info(symbol=symbol, order_id=orderId)
-        if result.get('status') == 'ok':
-            print(f"订单状态: {result.get('data')[0].get('status')}")
-            if result.get('data')[0].get('status') == 6:
+        orderResult = cross_get_order_info(symbol=symbol, order_id=orderId)
+        if orderResult.get('status') == 'ok':
+            print(f"订单状态: {orderResult.get('data')[0].get('status')}")
+            if orderResult.get('data')[0].get('status') == 6:
                 cnt += 1
 
     if cnt != curr:  # 如果有新的订单变更 需要重新挂单
@@ -180,6 +197,6 @@ def main():  # 定时监控订单状态
 print(accountClient.get_balance_valuation({"valuation_asset": 'USD'}))
 
 
-mainTimer = RepeatTimer(3, main, [])
+mainTimer = RepeatTimer(10, main, [])
 mainTimer.start()
 mainTimer.join()
