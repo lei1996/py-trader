@@ -23,8 +23,8 @@ close_call = [float(item) for item in args.close_call.split(',')]
 bs = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192][:max_cnt]
 price_lists = np.array([])  # 开仓价格列表
 close_lists = np.array([])  # 平仓价格列表
-order_lists = []  # 订单列表
-order_id = ''  # 平仓id
+open_order_id = ''  # 开仓订单id
+close_order_id = ''  # 平仓id
 precision = 0  # 价格精度
 curr = 0  # 当前开仓数
 
@@ -142,13 +142,13 @@ for i in range(0, max_cnt):
 
 print(f"平仓价格列表: {close_lists}")
 
-for i in range(0, len(price_lists)):
-    order_result = order(symbol=symbol, volume=bs[i], offset='open',
-                         direction=direction, price=price_lists[i].round(precision))
-    if order_result.get('status') == 'ok':
-        order_lists.append(order_result.get('data').get('order_id_str'))
+order_result = order(symbol=symbol, volume=bs[curr], offset='open',
+                     direction=direction, price=price_lists[curr].round(precision))
+if order_result.get('status') == 'ok':
+    open_order_id = order_result.get('data').get('order_id_str')
+    curr += 1
 
-print(f"挂单列表: {order_lists}")
+print(f"第一次挂单: {order_result}, 挂单id: {open_order_id}")
 
 
 timer = RepeatTimer(5, fetchData, [])
@@ -159,39 +159,43 @@ time.sleep(5)
 
 
 def main():  # 定时监控订单状态
-    global curr, order_id
+    global curr, open_order_id, close_order_id
+    print(
+        f"当前状态, curr: {curr}, open_order_id: {open_order_id}, close_order_id: {close_order_id}")
 
-    if order_id != '':  # 查看平仓订单状态
-        result = cross_get_order_info(symbol=symbol, order_id=order_id)
+    if close_order_id != '':  # 查看平仓订单状态
+        result = cross_get_order_info(symbol=symbol, order_id=close_order_id)
         if result.get('status') == 'ok':
             print(f"订单状态: {result.get('data')[0].get('status')}")
             if result.get('data')[0].get('status') == 6:
-                for orderId in order_lists:
-                    cancelRes = cross_cancel(symbol=symbol, order_id=orderId)
-                    print(f"生命周期结束，撤掉之前的所有挂单: {cancelRes}, ")
+                cancelRes = cross_cancel(symbol=symbol, order_id=open_order_id)
+                print(f"生命周期结束，撤掉之前的开仓挂单: {cancelRes}, ")
 
                 timer.cancel()
                 sys.exit(os.EX_OK)
 
-    cnt = 0
-    for orderId in order_lists:
-        orderResult = cross_get_order_info(symbol=symbol, order_id=orderId)
-        if orderResult.get('status') == 'ok':
-            print(f"订单状态: {orderResult.get('data')[0].get('status')}")
-            if orderResult.get('data')[0].get('status') == 6:
-                cnt += 1
+    orderResult = cross_get_order_info(symbol=symbol, order_id=open_order_id)
+    if orderResult.get('status') == 'ok':
+        print(f"订单状态: {orderResult.get('data')[0].get('status')}")
+        if orderResult.get('data')[0].get('status') == 6:
+            if close_order_id != '':
+                cancelRes = cross_cancel(
+                    symbol=symbol, order_id=close_order_id)
+                print(f"close_order_id 不为空 先撤单 {cancelRes}")
+            orderRes = order(symbol=symbol, volume=sum(bs[:curr]), offset='close', direction=str(
+                np.where(direction == 'buy', 'sell', 'buy')), price=close_lists[curr - 1].round(precision))
+            print(f"平仓 订单挂单: {orderRes}, ")
+            if orderRes.get('status') == 'ok':
+                close_order_id = orderRes.get('data').get('order_id_str')
 
-    if cnt != curr:  # 如果有新的订单变更 需要重新挂单
-        curr = cnt
-        if order_id != '':
-            cancelRes = cross_cancel(symbol=symbol, order_id=order_id)
-            print(f"order_id 不为空 先撤单 {cancelRes}")
-
-        orderRes = order(symbol=symbol, volume=sum(bs[:curr]), offset='close', direction=str(
-            np.where(direction == 'buy', 'sell', 'buy')), price=close_lists[curr - 1].round(precision))
-        print(f"close orderRes: {orderRes}, ")
-        if orderRes.get('status') == 'ok':
-            order_id = orderRes.get('data').get('order_id_str')
+            if curr < max_cnt:
+                order_result = order(symbol=symbol, volume=bs[curr], offset='open',
+                                     direction=direction, price=price_lists[curr].round(precision))
+                if order_result.get('status') == 'ok':
+                    open_order_id = order_result.get(
+                        'data').get('order_id_str')
+                print(f"重新挂开仓单: {order_result}, 挂单id: {open_order_id}")
+                curr += 1
 
 
 print(accountClient.get_balance_valuation({"valuation_asset": 'USD'}))
