@@ -82,7 +82,7 @@ def order(symbol: str, volume: int, offset: str, direction: str, price):  # 下�
 
 def cross_cancel(symbol: str, order_id: str):  # 撤单
     print(
-        f"symbol: {symbol}, order_id: {order_id}")
+        f"撤单 symbol: {symbol}, order_id: {order_id}")
     return orderClient.cross_cancel({
         "order_id": order_id,
         "contract_code": symbol
@@ -91,7 +91,7 @@ def cross_cancel(symbol: str, order_id: str):  # 撤单
 
 def cross_get_order_info(symbol: str, order_id: str):  # 查询订单状态
     print(
-        f"symbol: {symbol}, order_id: {order_id}")
+        f"查询订单状态 symbol: {symbol}, order_id: {order_id}")
     return orderClient.cross_get_order_info({
         "order_id": order_id,
         "contract_code": symbol
@@ -175,6 +175,9 @@ def main():  # 定时监控订单状态
                 sys.exit(os.EX_OK)
 
     orderResult = cross_get_order_info(symbol=symbol, order_id=open_order_id)
+    if orderResult == None:
+        print(f"debug 报错: {orderResult}")
+        return
     if orderResult.get('status') == 'ok':
         print(f"订单状态: {orderResult.get('data')[0].get('status')}")
         if orderResult.get('data')[0].get('status') == 6:
