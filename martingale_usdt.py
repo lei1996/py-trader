@@ -13,6 +13,7 @@ parser.add_argument('--max_cnt', help='最大开仓次数', type=int)
 parser.add_argument('--direction', help='开仓方向 buy | sell')
 parser.add_argument('--margin_call', help='跌 | 涨 x% 补仓, 0.01, 0.02, 0.03')
 parser.add_argument('--close_call', help='获利多少平仓 0.01, 0.02, 0.03')
+parser.add_argument('--lever_rate', help='杠杆倍数', type=int, default=20)
 args = parser.parse_args()
 
 symbol = args.symbol + '-USDT'
@@ -27,6 +28,7 @@ open_order_id = ''  # 开仓订单id
 close_order_id = ''  # 平仓id
 precision = 0  # 价格精度
 curr = 0  # 当前开仓数
+lever_rate = args.lever_rate
 
 
 print(symbol)
@@ -75,7 +77,7 @@ def order(symbol: str, volume: int, offset: str, direction: str, price):  # 下�
         "direction": direction,
         "offset": offset,
         "price": price,
-        "lever_rate": 20,
+        "lever_rate": lever_rate,
         "order_price_type": 'limit'
     })
 
