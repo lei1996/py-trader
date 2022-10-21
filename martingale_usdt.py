@@ -102,7 +102,7 @@ def cross_get_order_info(symbol: str, order_id: str):  # 查询订单状态
 
 def fetchData():
     result = fetchKLines(symbol, '1min', '1')
-    if len(result.get('data')) > 0:
+    if not result == None and len(result.get('data')) > 0:
         close = result.get('data')[0].get('close')
         print(f"update: {close}")
         return close
@@ -146,7 +146,7 @@ print(f"平仓价格列表: {close_lists}")
 
 order_result = order(symbol=symbol, volume=bs[curr], offset='open',
                      direction=direction, price=price_lists[curr].round(precision))
-if order_result.get('status') == 'ok':
+if not order_result == None and order_result.get('status') == 'ok':
     open_order_id = order_result.get('data').get('order_id_str')
     curr += 1
 
@@ -167,7 +167,7 @@ def main():  # 定时监控订单状态
 
     if close_order_id != '':  # 查看平仓订单状态
         result = cross_get_order_info(symbol=symbol, order_id=close_order_id)
-        if result.get('status') == 'ok':
+        if not result == None and result.get('status') == 'ok':
             print(f"订单状态: {result.get('data')[0].get('status')}")
             if result.get('data')[0].get('status') == 6:
                 cancelRes = cross_cancel(symbol=symbol, order_id=open_order_id)
@@ -177,10 +177,7 @@ def main():  # 定时监控订单状态
                 sys.exit(os.EX_OK)
 
     orderResult = cross_get_order_info(symbol=symbol, order_id=open_order_id)
-    if orderResult == None:
-        print(f"debug 报错: {orderResult}")
-        return
-    if orderResult.get('status') == 'ok':
+    if not orderResult == None and orderResult.get('status') == 'ok':
         print(f"订单状态: {orderResult.get('data')[0].get('status')}")
         if orderResult.get('data')[0].get('status') == 6:
             if close_order_id != '':
@@ -190,13 +187,13 @@ def main():  # 定时监控订单状态
             orderRes = order(symbol=symbol, volume=sum(bs[:curr]), offset='close', direction=str(
                 np.where(direction == 'buy', 'sell', 'buy')), price=close_lists[curr - 1].round(precision))
             print(f"平仓 订单挂单: {orderRes}, ")
-            if orderRes.get('status') == 'ok':
+            if not orderRes == None and orderRes.get('status') == 'ok':
                 close_order_id = orderRes.get('data').get('order_id_str')
 
             if curr < max_cnt:
                 order_result = order(symbol=symbol, volume=bs[curr], offset='open',
                                      direction=direction, price=price_lists[curr].round(precision))
-                if order_result.get('status') == 'ok':
+                if not order_result == None and order_result.get('status') == 'ok':
                     open_order_id = order_result.get(
                         'data').get('order_id_str')
                 print(f"重新挂开仓单: {order_result}, 挂单id: {open_order_id}")
