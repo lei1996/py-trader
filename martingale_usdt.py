@@ -163,7 +163,7 @@ time.sleep(5)
 
 
 def main():  # 定时监控订单状态
-    global curr, open_order_id, close_order_id
+    global curr, open_order_id, close_order_id, isMax
     print(
         f"当前状态, curr: {curr}, open_order_id: {open_order_id}, close_order_id: {close_order_id}")
 
