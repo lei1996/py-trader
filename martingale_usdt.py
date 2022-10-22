@@ -30,6 +30,7 @@ close_order_id = ''  # 平仓id
 precision = 0  # 价格精度
 curr = 0  # 当前开仓数
 base = 5
+isMax = False  # 是否开仓到了尾端
 
 
 print(symbol)
@@ -177,9 +178,9 @@ def main():  # 定时监控订单状态
                 timer.cancel()
                 sys.exit(os.EX_OK)
 
-    if curr == max_cnt:
+    if isMax == True:
         return
-        
+
     orderResult = cross_get_order_info(symbol=symbol, order_id=open_order_id)
     if not orderResult == None and orderResult.get('status') == 'ok':
         print(f"订单状态: {orderResult.get('data')[0].get('status')}")
@@ -193,6 +194,8 @@ def main():  # 定时监控订单状态
             print(f"平仓 订单挂单: {orderRes}, ")
             if not orderRes == None and orderRes.get('status') == 'ok':
                 close_order_id = orderRes.get('data').get('order_id_str')
+                if curr == max_cnt:
+                    isMax = True
 
             if curr < max_cnt:
                 order_result = order(symbol=symbol, volume=bs[curr], offset='open',
