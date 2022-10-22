@@ -19,6 +19,7 @@ args = parser.parse_args()
 symbol = args.symbol + '-USDT'
 max_cnt = args.max_cnt
 direction = args.direction
+lever_rate = args.lever_rate
 margin_call = [float(item) for item in args.margin_call.split(',')]
 close_call = [float(item) for item in args.close_call.split(',')]
 bs = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192][:max_cnt]
@@ -28,7 +29,7 @@ open_order_id = ''  # 开仓订单id
 close_order_id = ''  # 平仓id
 precision = 0  # 价格精度
 curr = 0  # 当前开仓数
-lever_rate = args.lever_rate
+base = 5
 
 
 print(symbol)
@@ -73,7 +74,7 @@ def order(symbol: str, volume: int, offset: str, direction: str, price):  # 下�
         f"symbol: {symbol}, volume: {volume}, offset: {offset}, direction: {direction}")
     return orderClient.cross_order({
         "contract_code": symbol,
-        "volume": volume,
+        "volume": volume * base,
         "direction": direction,
         "offset": offset,
         "price": price,
@@ -176,6 +177,9 @@ def main():  # 定时监控订单状态
                 timer.cancel()
                 sys.exit(os.EX_OK)
 
+    if curr == max_cnt:
+        return
+        
     orderResult = cross_get_order_info(symbol=symbol, order_id=open_order_id)
     if not orderResult == None and orderResult.get('status') == 'ok':
         print(f"订单状态: {orderResult.get('data')[0].get('status')}")
