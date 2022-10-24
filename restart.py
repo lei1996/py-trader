@@ -1,7 +1,7 @@
 import subprocess
 
 direction = ['buy', 'sell']
-symbols = ['btc', 'eth', 'clv', 'dydx', 'ht', 'apt']
+symbols = ['doge', 'fil', 'clv', '1inch', 'dot', 'snx']
 
 
 subprocess.run('rm -rf ~/.pm2/logs/*', shell=True)
