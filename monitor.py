@@ -7,23 +7,30 @@ from config.linairx001 import ACCESS_KEY, SECRET_KEY
 direction = ['buy', 'sell']
 symbols = [{
     "symbol": 'doge',
-    "lever_rate": 75
+    "lever_rate": '75'
 }, {
     "symbol": 'fil',
-    "lever_rate": 75
+    "lever_rate": '75'
 }, {
     "symbol": 'clv',
-    "lever_rate": 20
+    "lever_rate": '20'
 }, {
     "symbol": '1inch',
-    "lever_rate": 50
+    "lever_rate": '50'
 }, {
     "symbol": 'dot',
-    "lever_rate": 75
+    "lever_rate": '75'
 }, {
     "symbol": 'snx',
-    "lever_rate": 50
-}, ]
+    "lever_rate": '50'
+}]
+# symbols = [{
+#     "symbol": 'shib',
+#     "lever_rate": '10'
+# }, {
+#     "symbol": 'icp',
+#     "lever_rate": '10'
+# }]
 
 
 class RepeatTimer(Timer):
@@ -46,7 +53,7 @@ def fetchKLines(symbol: str, interval: str, limit: str):  # 通用请求k线函�
         {"contract_code": symbol, "period": interval, "size": limit})
 
 
-def order(symbol: str, volume: int, offset: str, direction: str, price):  # 下单
+def order(symbol: str, volume: int, offset: str, direction: str, lever_rate: int):  # 下单
     print(
         f"全部 平仓 symbol: {symbol}, volume: {volume}, offset: {offset}, direction: {direction}")
     return orderClient.cross_order({
@@ -54,7 +61,6 @@ def order(symbol: str, volume: int, offset: str, direction: str, price):  # 下�
         "volume": volume,
         "direction": direction,
         "offset": offset,
-        "price": price,
         "lever_rate": lever_rate,
         "order_price_type": 'optimal_20'
     })
@@ -88,13 +94,14 @@ def pm2_status():
 
 
 def fetchData(symbol: str, lever_rate: int):
-    result = fetchKLines('ICP-USDT', '60min', '24')
-    print(result)
+    print(symbol, lever_rate)
+    result = fetchKLines(symbol.upper() + '-USDT', '60min', '24')
+
     if not result == None and len(result.get('data')) > 0:
         klines = result.get('data')
         maxv = float('-inf')
         minv = float('inf')
-        print(f"klines: {klines}")
+        print(f"当前k线len {len(klines)}")
         for kline in klines:
             maxv = max(maxv, kline.get('high'))
             minv = min(minv, kline.get('low'))
@@ -104,34 +111,37 @@ def fetchData(symbol: str, lever_rate: int):
         print(pm2st)
 
         change = ((maxv - minv) / minv) * 100
-        if change > 8:
-            print('当前品种24小时振幅大于 8%, 终止该品种服务')
+        if change > 12:
+            print('当前品种24小时振幅大于 12%, 终止该品种服务')
             for dn in direction:
                 subprocess.run(['pm2', 'stop', symbol + '_' + dn])
-            cancelAllRes = cross_cancel_all(symbol=symbol)
+            cancelAllRes = cross_cancel_all(symbol=symbol.upper() + '-USDT')
             print(f"撤销该品种所有挂单: {cancelAllRes}")
 
+            position = cross_get_position_info(symbol.upper() + '-USDT')
+            print(f"position: {position}")
+            if not position == None and len(position.get('data')) > 0:
+                for item in position.get('data'):
+                    ordRes = order(symbol=item.get('contract_code'), volume=item.get(
+                        'volume'),  offset='close', direction='sell' if item.get('direction') == 'buy' else 'buy', lever_rate=item.get('lever_rate'))
+                    print(f"平仓订单返回值: {ordRes}")
+
         else:
-            print('当前品种24小时振幅小于 8%, 启动该品种服务')
+            print('当前品种24小时振幅小于 12%, 启动该品种服务')
             for dn in direction:
                 if not pm2st.get(symbol + '_' + dn) == 'online':
                     subprocess.run(['pm2', 'restart', symbol + '_' + dn])
 
-        print(change)
+        print(f"当前 @change 振幅: {change}")
 
 
-# timer = RepeatTimer(5, fetchData, [])
-# timer.start()
+for item in symbols:
+    symbol, lever_rate = item.values()
+    timer = RepeatTimer(60, fetchData, [symbol, int(lever_rate)])
+    timer.start()
 
-position = cross_get_position_info('CLV-USDT')
-print(f"position: {position}")
 
 # 每小时执行一次
-# 24小时振幅大于 8% pm2 stop xxx_buy xxx_sell && 撤销所有订单 && 平仓该品种
-# 小于 8% pm2 restart xxx_buy xxx_sell
+# 24小时振幅大于 12% pm2 stop xxx_buy xxx_sell && 撤销所有订单 && 平仓该品种
+# 小于 12% pm2 restart xxx_buy xxx_sell
 
-# subprocess.run('rm -rf ~/.pm2/logs/*', shell=True)
-
-# for symbol in symbols:
-#     for dn in direction:
-#         subprocess.run(['pm2', 'restart', symbol + '_' + dn])
