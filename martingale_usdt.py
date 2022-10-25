@@ -30,7 +30,7 @@ open_order_id = ''  # 开仓订单id
 close_order_id = ''  # 平仓id
 precision = 0  # 价格精度
 curr = 0  # 当前开仓数
-base = 5
+base = 15
 isMax = False  # 是否开仓到了尾端
 ratio = 1
 
@@ -115,8 +115,8 @@ def fetchData():
 precision = get_contract_info(symbol=symbol)
 print(f"价格精度 precision: {precision}")
 
-balance = accountClient.get_balance_valuation({"valuation_asset": 'USD'})
-print(f"当前权益: {balance}")
+balanceRes = accountClient.get_balance_valuation({"valuation_asset": 'USD'})
+print(f"当前权益: {balanceRes}")
 
 
 if not balanceRes == None and balanceRes.get('status') == 'ok':
