@@ -122,8 +122,8 @@ def fetchData(symbol: str, lever_rate: int):
             print(f"position: {position}")
             if not position == None and len(position.get('data')) > 0:
                 for item in position.get('data'):
-                    ordRes = order(symbol=item.get('contract_code'), volume=item.get(
-                        'volume'),  offset='close', direction='sell' if item.get('direction') == 'buy' else 'buy', lever_rate=item.get('lever_rate'))
+                    ordRes = order(symbol=item.get('contract_code'), volume=int(item.get(
+                        'volume')),  offset='close', direction='sell' if item.get('direction') == 'buy' else 'buy', lever_rate=item.get('lever_rate'))
                     print(f"平仓订单返回值: {ordRes}")
 
         else:
@@ -144,4 +144,3 @@ for item in symbols:
 # 每小时执行一次
 # 24小时振幅大于 12% pm2 stop xxx_buy xxx_sell && 撤销所有订单 && 平仓该品种
 # 小于 12% pm2 restart xxx_buy xxx_sell
-
