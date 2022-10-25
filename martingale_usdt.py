@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import argparse
+import math
 import numpy as np
 from threading import Timer
 from huobi.linear_swap.rest import account, market, order
@@ -31,6 +32,7 @@ precision = 0  # 价格精度
 curr = 0  # 当前开仓数
 base = 5
 isMax = False  # 是否开仓到了尾端
+ratio = 1
 
 
 print(symbol)
@@ -75,7 +77,7 @@ def order(symbol: str, volume: int, offset: str, direction: str, price):  # 下�
         f"symbol: {symbol}, volume: {volume}, offset: {offset}, direction: {direction}")
     return orderClient.cross_order({
         "contract_code": symbol,
-        "volume": volume * base,
+        "volume": volume * base * ratio,
         "direction": direction,
         "offset": offset,
         "price": price,
@@ -112,6 +114,14 @@ def fetchData():
 
 precision = get_contract_info(symbol=symbol)
 print(f"价格精度 precision: {precision}")
+
+balance = accountClient.get_balance_valuation({"valuation_asset": 'USD'})
+print(f"当前权益: {balance}")
+
+
+if not balanceRes == None and balanceRes.get('status') == 'ok':
+    ratio = math.floor(float(balanceRes.get('data')[0].get('balance')) / 100)
+    print(f"ratio: {ratio}")
 
 close = fetchData()
 
@@ -205,9 +215,6 @@ def main():  # 定时监控订单状态
                         'data').get('order_id_str')
                 print(f"重新挂开仓单: {order_result}, 挂单id: {open_order_id}")
                 curr += 1
-
-
-print(accountClient.get_balance_valuation({"valuation_asset": 'USD'}))
 
 
 mainTimer = RepeatTimer(10, main, [])
