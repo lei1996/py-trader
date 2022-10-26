@@ -4,7 +4,7 @@
 
 
 # 监控所有运行的品种，突然爆拉或者暴跌，直接停止脚本
-pm2 start monitor.py --name monitor --interpreter python3
+pm2 start martingale_monitor.py --name martingale_monitor --interpreter python3
 
 
 

@@ -114,7 +114,8 @@ def fetchData(symbol: str, lever_rate: int):
         if change > 12:
             print('当前品种24小时振幅大于 12%, 终止该品种服务')
             for dn in direction:
-                subprocess.run(['pm2', 'stop', symbol + '_' + dn])
+                if pm2st.get(symbol + '_' + dn) == 'online':
+                    subprocess.run(['pm2', 'stop', symbol + '_' + dn])
             cancelAllRes = cross_cancel_all(symbol=symbol.upper() + '-USDT')
             print(f"撤销该品种所有挂单: {cancelAllRes}")
 
@@ -132,13 +133,12 @@ def fetchData(symbol: str, lever_rate: int):
                 if not pm2st.get(symbol + '_' + dn) == 'online':
                     subprocess.run(['pm2', 'restart', symbol + '_' + dn])
 
-        print(f"当前 @change 振幅: {change}")
+        print(f"当前{symbol} @change 振幅: {change}")
 
 
 for item in symbols:
     symbol, lever_rate = item.values()
-    timer = RepeatTimer(60, fetchData, [symbol, int(lever_rate)])
-    timer.start()
+    fetchData(symbol, int(lever_rate))
 
 
 # 每小时执行一次

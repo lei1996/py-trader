@@ -30,7 +30,7 @@ open_order_id = ''  # 开仓订单id
 close_order_id = ''  # 平仓id
 precision = 0  # 价格精度
 curr = 0  # 当前开仓数
-base = 15
+base = 5
 isMax = False  # 是否开仓到了尾端
 ratio = 1
 
@@ -161,6 +161,8 @@ order_result = order(symbol=symbol, volume=bs[curr], offset='open',
 if not order_result == None and order_result.get('status') == 'ok':
     open_order_id = order_result.get('data').get('order_id_str')
     curr += 1
+else:
+    sys.exit(os.EX_OK)
 
 print(f"第一次挂单: {order_result}, 挂单id: {open_order_id}")
 
