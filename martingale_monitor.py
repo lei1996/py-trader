@@ -111,13 +111,13 @@ def fetchData(symbol: str, lever_rate: int):
         print(pm2st)
 
         change = ((maxv - minv) / minv) * 100
-        if change > 12:
-            print('当前品种24小时振幅大于 12%, 终止该品种服务')
+        if change > 5:
+            print('当前品种24小时振幅大于 5%, 终止该品种服务')
             for dn in direction:
                 if pm2st.get(symbol + '_' + dn) == 'online':
                     subprocess.run(['pm2', 'stop', symbol + '_' + dn])
-            cancelAllRes = cross_cancel_all(symbol=symbol.upper() + '-USDT')
-            print(f"撤销该品种所有挂单: {cancelAllRes}")
+                    cancelAllRes = cross_cancel_all(symbol=symbol.upper() + '-USDT')
+                    print(f"撤销该品种所有挂单: {cancelAllRes}")
 
             position = cross_get_position_info(symbol.upper() + '-USDT')
             print(f"position: {position}")
@@ -128,7 +128,7 @@ def fetchData(symbol: str, lever_rate: int):
                     print(f"平仓订单返回值: {ordRes}")
 
         else:
-            print('当前品种24小时振幅小于 12%, 启动该品种服务')
+            print('当前品种24小时振幅小于 5%, 启动该品种服务')
             for dn in direction:
                 if not pm2st.get(symbol + '_' + dn) == 'online':
                     subprocess.run(['pm2', 'restart', symbol + '_' + dn])
@@ -142,5 +142,5 @@ for item in symbols:
 
 
 # 每小时执行一次
-# 24小时振幅大于 12% pm2 stop xxx_buy xxx_sell && 撤销所有订单 && 平仓该品种
-# 小于 12% pm2 restart xxx_buy xxx_sell
+# 24小时振幅大于 5% pm2 stop xxx_buy xxx_sell && 撤销所有订单 && 平仓该品种
+# 小于 5% pm2 restart xxx_buy xxx_sell
