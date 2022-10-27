@@ -28,7 +28,7 @@ for item in symbols:
                         'start',
                         './martingale_usdt.py',
                         '--name',
-                        symbol + '_' + dn,
+                        symbol + '_' + dn + '_martingale',
                         '--interpreter',
                         'python3',
                         '--',
@@ -41,6 +41,6 @@ for item in symbols:
                         '--lever_rate',
                         lever_rate,
                         '--margin_call',
-                        '0.0,0.01,0.015,0.02,0.03',
+                        '0.0,0.01,0.01,0.01,0.01',
                         '--close_call',
                         '0.05,0.04,0.03,0.02,0.01'])

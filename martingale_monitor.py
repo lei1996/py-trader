@@ -114,9 +114,11 @@ def fetchData(symbol: str, lever_rate: int):
         if change > 5:
             print('当前品种24小时振幅大于 5%, 终止该品种服务')
             for dn in direction:
-                if pm2st.get(symbol + '_' + dn) == 'online':
-                    subprocess.run(['pm2', 'stop', symbol + '_' + dn])
-                    cancelAllRes = cross_cancel_all(symbol=symbol.upper() + '-USDT')
+                if pm2st.get(symbol + '_' + dn + '_martingale') == 'online':
+                    subprocess.run(
+                        ['pm2', 'stop', symbol + '_' + dn + '_martingale'])
+                    cancelAllRes = cross_cancel_all(
+                        symbol=symbol.upper() + '-USDT')
                     print(f"撤销该品种所有挂单: {cancelAllRes}")
 
             position = cross_get_position_info(symbol.upper() + '-USDT')
@@ -130,8 +132,9 @@ def fetchData(symbol: str, lever_rate: int):
         else:
             print('当前品种24小时振幅小于 5%, 启动该品种服务')
             for dn in direction:
-                if not pm2st.get(symbol + '_' + dn) == 'online':
-                    subprocess.run(['pm2', 'restart', symbol + '_' + dn])
+                if not pm2st.get(symbol + '_' + dn + '_martingale') == 'online':
+                    subprocess.run(
+                        ['pm2', 'restart', symbol + '_' + dn + '_martingale'])
 
         print(f"当前{symbol} @change 振幅: {change}")
 

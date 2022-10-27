@@ -32,7 +32,6 @@ precision = 0  # 价格精度
 curr = 0  # 当前开仓数
 base = 5
 isMax = False  # 是否开仓到了尾端
-ratio = 1
 
 
 print(symbol)
@@ -77,7 +76,7 @@ def order(symbol: str, volume: int, offset: str, direction: str, price):  # 下�
         f"symbol: {symbol}, volume: {volume}, offset: {offset}, direction: {direction}")
     return orderClient.cross_order({
         "contract_code": symbol,
-        "volume": volume * base * ratio,
+        "volume": volume * base,
         "direction": direction,
         "offset": offset,
         "price": price,
@@ -120,8 +119,9 @@ print(f"当前权益: {balanceRes}")
 
 
 if not balanceRes == None and balanceRes.get('status') == 'ok':
-    ratio = math.floor(float(balanceRes.get('data')[0].get('balance')) / 100)
-    print(f"ratio: {ratio}")
+    x = math.floor(float(balanceRes.get('data')[0].get('balance')) / 100)
+    base = (1 if x == 0 else x) * 2
+    print(f"base: {base}")
 
 close = fetchData()
 
