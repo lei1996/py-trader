@@ -9,3 +9,11 @@ pm2 start martingale_monitor.py --name martingale_monitor --interpreter python3
 
 
 pm2 需要通过 -- 作为分隔符 区别 程序内部的参数
+
+
+# 正向马丁，最开始开1， 然后每上涨1% 加仓， 滚雪球，然后下跌0.5%，平仓
+
+然后 run.py 要和 监控脚本合并成启动脚本。
+
+还是用原有的模式操作
+先计算列表  然后每5秒钟监控一次k线
