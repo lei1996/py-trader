@@ -150,7 +150,7 @@ def main():  # 定时监控订单状态
 
     if close == None:
         return
-        
+
     isClose = False  # 是否平仓
     if curr == max_cnt - 1:  # 到达列表尾端
 
@@ -164,14 +164,15 @@ def main():  # 定时监控订单状态
                 f"到达列表尾端，空头满足获利平仓条件, 当前价格: {close}, 止盈触发价格: {price_lists[curr]}")
             isClose = True
 
-    # 多/空 头寸 止损
-    if direction == 'buy' and close_lists[curr - 1] >= close:
-        print(f"多头触发止损条件, 当前价格: {close}, 止损触发价格: {close_lists[curr]}")
-        isClose = True
+    if curr != 0:
+        # 多/空 头寸 止损
+        if direction == 'buy' and close_lists[curr - 1] >= close:
+            print(f"多头触发止损条件, 当前价格: {close}, 止损触发价格: {close_lists[curr - 1]}")
+            isClose = True
 
-    elif direction == 'sell' and close_lists[curr - 1] <= close:
-        print(f"空头触发止损条件, 当前价格: {close}, 止损触发价格: {close_lists[curr]}")
-        isClose = True
+        elif direction == 'sell' and close_lists[curr - 1] <= close:
+            print(f"空头触发止损条件, 当前价格: {close}, 止损触发价格: {close_lists[curr - 1]}")
+            isClose = True
 
     if isClose == True:
         orderRes = order(symbol=symbol, volume=sum(bs[:curr]), offset='close', direction=str(
@@ -188,7 +189,7 @@ def main():  # 定时监控订单状态
                     sys.exit(os.EX_OK)
 
     # 多/空 头寸 开仓
-    if (direction == 'buy' and price_lists[curr] >= close) or (direction == 'sell' and price_lists[curr] <= close):
+    if (direction == 'buy' and price_lists[curr] <= close) or (direction == 'sell' and price_lists[curr] >= close):
         orderRes = order(
             symbol=symbol, volume=bs[curr], offset='open', direction=direction)
         print(f"开仓 订单: {orderRes}, ")
