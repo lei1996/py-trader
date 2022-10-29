@@ -101,7 +101,7 @@ def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: s
                     'python3',
                     '--',
                     '--symbol',
-                    symbol,
+                    symbol.upper(),
                     '--max_cnt',
                     max_cnt,
                     '--direction',
@@ -118,7 +118,7 @@ def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: s
                     secret_key, ])
 
 
-def stop_task(name: str, symbol: str, direction: str): # 终止任务
+def stop_task(name: str, symbol: str, direction: str):  # 终止任务
     pm2 = pm2_status()
     if not pm2.get(name) == None:
         return
@@ -127,6 +127,15 @@ def stop_task(name: str, symbol: str, direction: str): # 终止任务
     cancelAllRes = cross_cancel_all(
         symbol=symbol.upper() + '-USDT', direction=direction)
     print(f"撤销该品种 {direction} 方向所有挂单: {cancelAllRes}")
+    position = cross_get_position_info(symbol.upper() + '-USDT')
+    print(f"position: {position}")
+    if not position == None and len(position.get('data')) > 0:
+        for item in position.get('data'):
+            if item.get('direction') != direction:
+                continue
+            ordRes = order(symbol=item.get('contract_code'), volume=int(item.get(
+                'volume')),  offset='close', direction='sell' if item.get('direction') == 'buy' else 'buy', lever_rate=item.get('lever_rate'))
+            print(f"平仓订单返回值: {ordRes}")
 
 
 def main(symbol: str, lever_rate: str):
@@ -166,82 +175,52 @@ def main(symbol: str, lever_rate: str):
         if max_index - min_index >= 6:  # 最大值和最小值的间隔必须要大于6根k线，过滤急拉急跌的行情
             maxv = max_index
             minv = max_index
+            isOpen = False
             if len(klines) == max_index + 1:
-                print('当前k线就是最大值，看之前5根k线量是否递增，是的话直接买入，止损挂在low的位置')
-            for i in range(max_index + 1, len(klines)):
-                # print(klines[i])
-                maxv = maxv if klines[maxv].get(
-                    'high') > klines[i].get('high') else i
-                minv = minv if klines[minv].get(
-                    'low') < klines[i].get('low') else i
-
-            print(f"maxv: {maxv}, minv: {minv}")
-            print(f"maxv_kline: {klines[maxv]}, minv_kline: {klines[minv]}")
-            se_high = klines[maxv].get('high')
-            se_low = klines[minv].get('low')
-            se_change = ((se_high - se_low) / se_low) * 100
-            print(f"se_change: {se_change}")
-
-            if se_change <= 5:
-                print('次级振幅小于5%， 开启多头马丁')
+                print('当前k线就是最大值，直接开启马丁')
+                isOpen = True
             else:
-                print('次级振幅大于5%， 关闭多头马丁')
+                for i in range(max_index + 1, len(klines)):
+                    # print(klines[i])
+                    maxv = maxv if klines[maxv].get(
+                        'high') > klines[i].get('high') else i
+                    minv = minv if klines[minv].get(
+                        'low') < klines[i].get('low') else i
+
+                print(f"maxv: {maxv}, minv: {minv}")
+                print(
+                    f"maxv_kline: {klines[maxv]}, minv_kline: {klines[minv]}")
+                se_high = klines[maxv].get('high')
+                se_low = klines[minv].get('low')
+                se_change = ((se_high - se_low) / se_low) * 100
+                print(f"se_change: {se_change}")
+
+                if se_change <= 5:
+                    print('次级振幅小于5%， 开启多头马丁')
+                    isOpen = True
+
+            if isOpen == True:
+                run_task(name=f"{symbol}_buy_martingale", symbol=symbol, max_cnt='5', direction='buy', lever_rate=lever_rate,
+                         margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.04,0.03,0.02,0.01', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
+            elif isOpen == False:
+                print('为满足条件, 终止马丁')
+                stop_task(name=f"{symbol}_buy_martingale",
+                          symbol=symbol, direction='buy')
+        else:
+            print('未知情况，终止交易')
+            stop_task(name=f"{symbol}_buy_martingale",
+                      symbol=symbol, direction='buy')
+            stop_task(name=f"{symbol}_sell_martingale",
+                      symbol=symbol, direction='sell')
 
     elif change <= 5:
         print('震荡行情，关闭多/空马丁')
-
-
-def fetchData(symbol: str, lever_rate: int):
-    print(symbol, lever_rate)
-    result = fetchKLines(symbol.upper() + '-USDT', '60min', '24')
-
-    if not result == None and len(result.get('data')) > 0:
-        klines = result.get('data')
-        maxv = float('-inf')
-        minv = float('inf')
-        print(f"当前k线len {len(klines)}")
-        for kline in klines:
-            maxv = max(maxv, kline.get('high'))
-            minv = min(minv, kline.get('low'))
-
-        print(f"maxv: {maxv}, minv: {minv}")
-        pm2st = pm2_status()
-        print(pm2st)
-
-        change = ((maxv - minv) / minv) * 100
-        if change > 5:
-            print('当前品种24小时振幅大于 5%, 终止该品种服务')
-            for dn in direction:
-                if pm2st.get(symbol + '_' + dn + '_martingale') == 'online':
-                    subprocess.run(
-                        ['pm2', 'stop', symbol + '_' + dn + '_martingale'])
-                    cancelAllRes = cross_cancel_all(
-                        symbol=symbol.upper() + '-USDT')
-                    print(f"撤销该品种所有挂单: {cancelAllRes}")
-
-            position = cross_get_position_info(symbol.upper() + '-USDT')
-            print(f"position: {position}")
-            if not position == None and len(position.get('data')) > 0:
-                for item in position.get('data'):
-                    ordRes = order(symbol=item.get('contract_code'), volume=int(item.get(
-                        'volume')),  offset='close', direction='sell' if item.get('direction') == 'buy' else 'buy', lever_rate=item.get('lever_rate'))
-                    print(f"平仓订单返回值: {ordRes}")
-
-        else:
-            print('当前品种24小时振幅小于 5%, 启动该品种服务')
-            for dn in direction:
-                if not pm2st.get(symbol + '_' + dn + '_martingale') == 'online':
-                    subprocess.run(
-                        ['pm2', 'restart', symbol + '_' + dn + '_martingale'])
-
-        print(f"当前{symbol} @change 振幅: {change}")
+        stop_task(name=f"{symbol}_buy_martingale",
+                  symbol=symbol, direction='buy')
+        stop_task(name=f"{symbol}_sell_martingale",
+                  symbol=symbol, direction='sell')
 
 
 for item in symbols:
     symbol, lever_rate = item.values()
-    fetchData(symbol, int(lever_rate))
-
-
-# 每小时执行一次
-# 24小时振幅大于 5% pm2 stop xxx_buy xxx_sell && 撤销所有订单 && 平仓该品种
-# 小于 5% pm2 restart xxx_buy xxx_sell
+    main(symbol, int(lever_rate))
