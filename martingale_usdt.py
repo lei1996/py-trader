@@ -174,7 +174,7 @@ timer = RepeatTimer(5, fetchData, [])
 timer.start()
 
 
-time.sleep(5)
+# time.sleep(1)
 
 
 def main():  # 定时监控订单状态

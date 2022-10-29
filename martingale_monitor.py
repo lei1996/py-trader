@@ -4,27 +4,6 @@ from threading import Timer
 from huobi.linear_swap.rest import account, market, order
 from config.linairx001 import ACCESS_KEY, SECRET_KEY
 
-direction = ['buy', 'sell']
-symbols = [{
-    "symbol": 'doge',
-    "lever_rate": '75'
-}, {
-    "symbol": 'fil',
-    "lever_rate": '75'
-}, {
-    "symbol": 'clv',
-    "lever_rate": '20'
-}, {
-    "symbol": '1inch',
-    "lever_rate": '50'
-}, {
-    "symbol": 'dot',
-    "lever_rate": '75'
-}, {
-    "symbol": 'snx',
-    "lever_rate": '50'
-}]
-
 
 class RepeatTimer(Timer):
     def run(self):
@@ -39,6 +18,19 @@ orderClient = order.Order(ACCESS_KEY,
                           SECRET_KEY)
 accountClient = account.Account(ACCESS_KEY,
                                 SECRET_KEY)
+
+
+def get_contract_info():  # 获取合约信息和杠杆倍数
+    contract_info = accountClient.cross_get_available_level_rate({})
+    result = []
+    if not contract_info == None and len(contract_info.get('data')) > 0:
+        for item in contract_info.get('data'):
+            result.append({
+                "symbol": item.get('contract_code').split('-')[0].lower(),
+                "level_rate": item.get('available_level_rate').split(',')[-1]
+            })
+    print(result)
+    return result
 
 
 def fetchKLines(symbol: str, interval: str, limit: str):  # 通用请求k线函数
@@ -209,16 +201,59 @@ def main(symbol: str, lever_rate: str):
                 print('未满足条件, 终止马丁')
                 stop_task(name=f"{symbol}_buy_martingale",
                           symbol=symbol)
+
+        elif min_index - max_index >= 6:
+            maxv = min_index
+            minv = min_index
+            isOpen = False
+            if len(klines) == min_index + 1:
+                print('当前k线就是最小值，直接开启马丁')
+                isOpen = True
+            else:
+                for i in range(min_index + 1, len(klines)):
+                    # print(klines[i])
+                    maxv = maxv if klines[maxv].get(
+                        'high') > klines[i].get('high') else i
+                    minv = minv if klines[minv].get(
+                        'low') < klines[i].get('low') else i
+
+                print(f"maxv: {maxv}, minv: {minv}")
+                print(
+                    f"maxv_kline: {klines[maxv]}, minv_kline: {klines[minv]}")
+                se_high = klines[maxv].get('high')
+                se_low = klines[minv].get('low')
+                se_change = ((se_high - se_low) / se_low) * 100
+                print(f"se_change: {se_change}")
+
+                if se_change / change <= 1/2:
+                    print(f'次级振幅小于{change / 2}%， 开启空头马丁')
+                    isOpen = True
+
+            if isOpen == True:
+                print('开启马丁~~~~')
+                run_task(name=f"{symbol}_sell_martingale", symbol=symbol, max_cnt=5, direction='sell', lever_rate=lever_rate,
+                         margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.03,0.02,0.01,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
+            elif isOpen == False:
+                print('未满足条件, 终止马丁')
+                stop_task(name=f"{symbol}_sell_martingale",
+                          symbol=symbol)
+
         else:
             print('未知情况，终止交易')
             stop_task(name=f"{symbol}_buy_martingale",
+                      symbol=symbol)
+            stop_task(name=f"{symbol}_sell_martingale",
                       symbol=symbol)
 
     elif change <= 5:
         print('震荡行情，关闭多/空马丁')
         stop_task(name=f"{symbol}_buy_martingale",
                   symbol=symbol)
+        stop_task(name=f"{symbol}_sell_martingale",
+                  symbol=symbol)
 
+
+symbols = get_contract_info()
 
 for item in symbols:
     symbol, lever_rate = item.values()
