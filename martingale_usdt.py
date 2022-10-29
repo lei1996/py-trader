@@ -6,7 +6,6 @@ import math
 import numpy as np
 from threading import Timer
 from huobi.linear_swap.rest import account, market, order
-from config.linairx001 import ACCESS_KEY, SECRET_KEY
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--symbol', help='品种代码 like: HT')
@@ -14,6 +13,8 @@ parser.add_argument('--max_cnt', help='最大开仓次数', type=int)
 parser.add_argument('--direction', help='开仓方向 buy | sell')
 parser.add_argument('--margin_call', help='跌 | 涨 x% 补仓, 0.01, 0.02, 0.03')
 parser.add_argument('--close_call', help='获利多少平仓 0.01, 0.02, 0.03')
+parser.add_argument('--access_key', help='access_key', default='')
+parser.add_argument('--secret_key', help='secret_key', default='')
 parser.add_argument('--lever_rate', help='杠杆倍数', type=int, default=20)
 args = parser.parse_args()
 
@@ -21,6 +22,8 @@ symbol = args.symbol + '-USDT'
 max_cnt = args.max_cnt
 direction = args.direction
 lever_rate = args.lever_rate
+ACCESS_KEY = args.access_key
+SECRET_KEY = args.secret_key
 margin_call = [float(item) for item in args.margin_call.split(',')]
 close_call = [float(item) for item in args.close_call.split(',')]
 bs = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192][:max_cnt]

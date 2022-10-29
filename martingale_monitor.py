@@ -24,13 +24,6 @@ symbols = [{
     "symbol": 'snx',
     "lever_rate": '50'
 }]
-# symbols = [{
-#     "symbol": 'shib',
-#     "lever_rate": '10'
-# }, {
-#     "symbol": 'icp',
-#     "lever_rate": '10'
-# }]
 
 
 class RepeatTimer(Timer):
@@ -74,11 +67,12 @@ def cross_get_position_info(symbol: str):  # 当前用户持仓
     })
 
 
-def cross_cancel_all(symbol: str):  # 撤单
+def cross_cancel_all(symbol: str, direction: str):  # 撤单
     print(
-        f"全部撤单 symbol: {symbol}")
+        f"全部撤单 symbol: {symbol}, direction: {direction}")
     return orderClient.cross_cancel_all({
-        "contract_code": symbol
+        "contract_code": symbol,
+        "direction": direction
     })
 
 
@@ -91,6 +85,110 @@ def pm2_status():
         result[item.get('name')] = item.get('pm2_env').get('status')
 
     return result
+
+
+def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: str, margin_call: str, close_call: str, access_key: str, secret_key: str):
+    pm2 = pm2_status()
+    if not pm2.get(name) == None:
+        return
+
+    subprocess.run(['pm2',
+                    'start',
+                    './martingale_usdt.py',
+                    '--name',
+                    name,
+                    '--interpreter',
+                    'python3',
+                    '--',
+                    '--symbol',
+                    symbol,
+                    '--max_cnt',
+                    max_cnt,
+                    '--direction',
+                    direction,
+                    '--lever_rate',
+                    lever_rate,
+                    '--margin_call',
+                    margin_call,
+                    '--close_call',
+                    close_call,
+                    '--access_key',
+                    access_key,
+                    '--secret_key',
+                    secret_key, ])
+
+
+def stop_task(name: str, symbol: str, direction: str): # 终止任务
+    pm2 = pm2_status()
+    if not pm2.get(name) == None:
+        return
+
+    subprocess.run(['pm2', 'delete', name])  # pm2 删除任务
+    cancelAllRes = cross_cancel_all(
+        symbol=symbol.upper() + '-USDT', direction=direction)
+    print(f"撤销该品种 {direction} 方向所有挂单: {cancelAllRes}")
+
+
+def main(symbol: str, lever_rate: str):
+    result = fetchKLines(symbol=symbol, interval='15min', limit='96')
+
+    # print(result)
+    max_index = 0
+    min_index = 0
+    klines = []
+
+    if not result == None or len(result.get('data')) == 0:
+        return
+
+    klines = result.get('data')
+    print(f"当前k线len {len(klines)}")
+
+    for i in range(1, len(klines)):
+        max_index = max_index if klines[max_index].get(
+            'high') > klines[i].get('high') else i
+        min_index = min_index if klines[min_index].get(
+            'low') < klines[i].get('low') else i
+
+    print(f"max: {klines[max_index]}, min: {klines[min_index]}")
+    print(f"max_index: {max_index}, min_index: {min_index}")
+
+    high = klines[max_index].get('high')
+    low = klines[min_index].get('low')
+    middle = ((high - low) / 2) + low
+
+    change = ((high - low) / low) * 100
+
+    print(f"change: {change}")
+    print(f"middle: {middle}")
+    print(f"last: {klines[-1]}")
+
+    if change > 5:
+        if max_index - min_index >= 6:  # 最大值和最小值的间隔必须要大于6根k线，过滤急拉急跌的行情
+            maxv = max_index
+            minv = max_index
+            if len(klines) == max_index + 1:
+                print('当前k线就是最大值，看之前5根k线量是否递增，是的话直接买入，止损挂在low的位置')
+            for i in range(max_index + 1, len(klines)):
+                # print(klines[i])
+                maxv = maxv if klines[maxv].get(
+                    'high') > klines[i].get('high') else i
+                minv = minv if klines[minv].get(
+                    'low') < klines[i].get('low') else i
+
+            print(f"maxv: {maxv}, minv: {minv}")
+            print(f"maxv_kline: {klines[maxv]}, minv_kline: {klines[minv]}")
+            se_high = klines[maxv].get('high')
+            se_low = klines[minv].get('low')
+            se_change = ((se_high - se_low) / se_low) * 100
+            print(f"se_change: {se_change}")
+
+            if se_change <= 5:
+                print('次级振幅小于5%， 开启多头马丁')
+            else:
+                print('次级振幅大于5%， 关闭多头马丁')
+
+    elif change <= 5:
+        print('震荡行情，关闭多/空马丁')
 
 
 def fetchData(symbol: str, lever_rate: int):
