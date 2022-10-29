@@ -89,7 +89,7 @@ def pm2_status():
 
 def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: str, margin_call: str, close_call: str, access_key: str, secret_key: str):
     pm2 = pm2_status()
-    if not pm2.get(name) == None:
+    if pm2.get(name) == None:
         return
 
     subprocess.run(['pm2',
@@ -120,7 +120,7 @@ def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: s
 
 def stop_task(name: str, symbol: str, direction: str):  # 终止任务
     pm2 = pm2_status()
-    if not pm2.get(name) == None:
+    if pm2.get(name) == None:
         return
 
     subprocess.run(['pm2', 'delete', name])  # pm2 删除任务
@@ -139,14 +139,15 @@ def stop_task(name: str, symbol: str, direction: str):  # 终止任务
 
 
 def main(symbol: str, lever_rate: str):
-    result = fetchKLines(symbol=symbol, interval='15min', limit='96')
+    result = fetchKLines(
+        symbol=f"{symbol.upper()}-USDT", interval='15min', limit='96')
 
     # print(result)
     max_index = 0
     min_index = 0
     klines = []
 
-    if not result == None or len(result.get('data')) == 0:
+    if result == None or len(result.get('data')) == 0:
         return
 
     klines = result.get('data')
@@ -203,7 +204,7 @@ def main(symbol: str, lever_rate: str):
                 run_task(name=f"{symbol}_buy_martingale", symbol=symbol, max_cnt='5', direction='buy', lever_rate=lever_rate,
                          margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.04,0.03,0.02,0.01', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
             elif isOpen == False:
-                print('为满足条件, 终止马丁')
+                print('未满足条件, 终止马丁')
                 stop_task(name=f"{symbol}_buy_martingale",
                           symbol=symbol, direction='buy')
         else:
@@ -223,4 +224,5 @@ def main(symbol: str, lever_rate: str):
 
 for item in symbols:
     symbol, lever_rate = item.values()
+    print(f'服务运行中: symbol: {symbol}, lever_rate: {lever_rate}')
     main(symbol, int(lever_rate))
