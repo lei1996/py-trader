@@ -89,8 +89,12 @@ def pm2_status():
 
 def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: str, margin_call: str, close_call: str, access_key: str, secret_key: str):
     pm2 = pm2_status()
-    if pm2.get(name) == None:
+    print(f"pm2: {pm2}")
+    if not pm2.get(name) == None:
         return
+
+    print('启动任务', name, symbol.upper(), max_cnt, direction,
+          lever_rate, margin_call, close_call, access_key, secret_key)
 
     subprocess.run(['pm2',
                     'start',
@@ -103,11 +107,11 @@ def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: s
                     '--symbol',
                     symbol.upper(),
                     '--max_cnt',
-                    max_cnt,
+                    str(max_cnt),
                     '--direction',
                     direction,
                     '--lever_rate',
-                    lever_rate,
+                    str(lever_rate),
                     '--margin_call',
                     margin_call,
                     '--close_call',
@@ -201,7 +205,8 @@ def main(symbol: str, lever_rate: str):
                     isOpen = True
 
             if isOpen == True:
-                run_task(name=f"{symbol}_buy_martingale", symbol=symbol, max_cnt='5', direction='buy', lever_rate=lever_rate,
+                print('开启马丁~~~~')
+                run_task(name=f"{symbol}_buy_martingale", symbol=symbol, max_cnt=5, direction='buy', lever_rate=lever_rate,
                          margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.04,0.03,0.02,0.01', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
             elif isOpen == False:
                 print('未满足条件, 终止马丁')
