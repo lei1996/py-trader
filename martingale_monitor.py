@@ -67,12 +67,11 @@ def cross_get_position_info(symbol: str):  # 当前用户持仓
     })
 
 
-def cross_cancel_all(symbol: str, direction: str):  # 撤单
+def cross_cancel_all(symbol: str):  # 撤单
     print(
-        f"全部撤单 symbol: {symbol}, direction: {direction}")
+        f"全部撤单 symbol: {symbol}")
     return orderClient.cross_cancel_all({
-        "contract_code": symbol,
-        "direction": direction
+        "contract_code": symbol
     })
 
 
@@ -122,21 +121,19 @@ def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: s
                     secret_key, ])
 
 
-def stop_task(name: str, symbol: str, direction: str):  # 终止任务
+def stop_task(name: str, symbol: str):  # 终止任务
     pm2 = pm2_status()
     if pm2.get(name) == None:
         return
 
     subprocess.run(['pm2', 'delete', name])  # pm2 删除任务
     cancelAllRes = cross_cancel_all(
-        symbol=symbol.upper() + '-USDT', direction=direction)
-    print(f"撤销该品种 {direction} 方向所有挂单: {cancelAllRes}")
+        symbol=symbol.upper() + '-USDT')
+    print(f"撤销该品种所有挂单: {cancelAllRes}")
     position = cross_get_position_info(symbol.upper() + '-USDT')
     print(f"position: {position}")
     if not position == None and len(position.get('data')) > 0:
         for item in position.get('data'):
-            if item.get('direction') != direction:
-                continue
             ordRes = order(symbol=item.get('contract_code'), volume=int(item.get(
                 'volume')),  offset='close', direction='sell' if item.get('direction') == 'buy' else 'buy', lever_rate=item.get('lever_rate'))
             print(f"平仓订单返回值: {ordRes}")
@@ -200,8 +197,8 @@ def main(symbol: str, lever_rate: str):
                 se_change = ((se_high - se_low) / se_low) * 100
                 print(f"se_change: {se_change}")
 
-                if se_change <= 5:
-                    print('次级振幅小于5%， 开启多头马丁')
+                if se_change <= 8:
+                    print('次级振幅小于8%， 开启多头马丁')
                     isOpen = True
 
             if isOpen == True:
@@ -211,20 +208,16 @@ def main(symbol: str, lever_rate: str):
             elif isOpen == False:
                 print('未满足条件, 终止马丁')
                 stop_task(name=f"{symbol}_buy_martingale",
-                          symbol=symbol, direction='buy')
+                          symbol=symbol)
         else:
             print('未知情况，终止交易')
             stop_task(name=f"{symbol}_buy_martingale",
-                      symbol=symbol, direction='buy')
-            stop_task(name=f"{symbol}_sell_martingale",
-                      symbol=symbol, direction='sell')
+                      symbol=symbol)
 
     elif change <= 5:
         print('震荡行情，关闭多/空马丁')
         stop_task(name=f"{symbol}_buy_martingale",
-                  symbol=symbol, direction='buy')
-        stop_task(name=f"{symbol}_sell_martingale",
-                  symbol=symbol, direction='sell')
+                  symbol=symbol)
 
 
 for item in symbols:
