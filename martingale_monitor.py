@@ -197,14 +197,14 @@ def main(symbol: str, lever_rate: str):
                 se_change = ((se_high - se_low) / se_low) * 100
                 print(f"se_change: {se_change}")
 
-                if se_change <= 8:
-                    print('次级振幅小于8%， 开启多头马丁')
+                if se_change / change <= 1/2:
+                    print(f'次级振幅小于{change / 2}%， 开启多头马丁')
                     isOpen = True
 
             if isOpen == True:
                 print('开启马丁~~~~')
                 run_task(name=f"{symbol}_buy_martingale", symbol=symbol, max_cnt=5, direction='buy', lever_rate=lever_rate,
-                         margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.04,0.03,0.02,0.01', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
+                         margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.03,0.02,0.01,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
             elif isOpen == False:
                 print('未满足条件, 终止马丁')
                 stop_task(name=f"{symbol}_buy_martingale",
