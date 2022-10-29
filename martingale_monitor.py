@@ -81,7 +81,7 @@ def pm2_status():
     result = {}
 
     for item in json.loads(out.stdout):
-        print(item.get('name'), item.get('pm2_env').get('status'))
+        # print(item.get('name'), item.get('pm2_env').get('status'))
         result[item.get('name')] = item.get('pm2_env').get('status')
 
     return result
