@@ -165,7 +165,7 @@ def main(symbol: str, lever_rate: str):
     print(f"middle: {middle}")
     print(f"last: {klines[-1]}")
 
-    if change > 5:
+    if change > 8:
         if max_index - min_index >= 6:  # 最大值和最小值的间隔必须要大于6根k线，过滤急拉急跌的行情
             maxv = max_index
             minv = max_index
@@ -245,7 +245,7 @@ def main(symbol: str, lever_rate: str):
             stop_task(name=f"{symbol}_sell_martingale",
                       symbol=symbol)
 
-    elif change <= 5:
+    else:
         print('震荡行情，关闭多/空马丁')
         stop_task(name=f"{symbol}_buy_martingale",
                   symbol=symbol)

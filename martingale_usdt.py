@@ -35,6 +35,7 @@ precision = 0  # 价格精度
 curr = 0  # 当前开仓数
 base = 5
 isMax = False  # 是否开仓到了尾端
+time_cnt = 0
 
 
 print(symbol)
@@ -123,7 +124,7 @@ print(f"当前权益: {balanceRes}")
 
 if not balanceRes == None and balanceRes.get('status') == 'ok':
     x = math.floor(float(balanceRes.get('data')[0].get('balance')) / 100)
-    base = (1 if x == 0 else x) * 2
+    base = (1 if x == 0 else x) * 1
     print(f"base: {base}")
 
 close = fetchData()
@@ -178,9 +179,18 @@ timer.start()
 
 
 def main():  # 定时监控订单状态
-    global curr, open_order_id, close_order_id, isMax
+    global curr, time_cnt, open_order_id, close_order_id, isMax
     print(
-        f"当前状态, curr: {curr}, open_order_id: {open_order_id}, close_order_id: {close_order_id}")
+        f"当前状态, curr: {curr}, time_cnt: {time_cnt}, open_order_id: {open_order_id}, close_order_id: {close_order_id}")
+    time_cnt += 1
+
+    if time_cnt >= 30 and curr == 1:
+        cancelRes = cross_cancel(symbol=symbol, order_id=open_order_id)
+        print(f"第一次挂单长时间没有成交，撤掉重启服务: {cancelRes}, ")
+
+        timer.cancel()
+        sys.exit(os.EX_OK)
+
 
     if close_order_id != '':  # 查看平仓订单状态
         result = cross_get_order_info(symbol=symbol, order_id=close_order_id)
