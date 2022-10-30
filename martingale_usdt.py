@@ -33,7 +33,7 @@ open_order_id = ''  # 开仓订单id
 close_order_id = ''  # 平仓id
 precision = 0  # 价格精度
 curr = 0  # 当前开仓数
-base = 5
+base = 1
 isMax = False  # 是否开仓到了尾端
 time_cnt = 0
 
@@ -62,12 +62,16 @@ class RepeatTimer(Timer):
 
 def get_contract_info(symbol: str):  # 从合约信息中获取 价格精度 数值
     result = client.get_contract_info({"contract_code": symbol})
-    price_tick = str(result.get('data')[0].get('price_tick'))
+    obj = {}
+    if not result == None and len(result.get('data')) > 0:
+        price_tick = str(result.get('data')[0].get('price_tick'))
+        if '1e-' in price_tick:
+            obj['precision'] = int(price_tick.split('-')[1])
+        else:
+            obj['precision'] = len(price_tick.split('.')[1])
+        obj['contract_size'] = result.get('data')[0].get('contract_size')
 
-    if '1e-' in price_tick:
-        return int(price_tick.split('-')[1])
-    else:
-        return len(price_tick.split('.')[1])
+    return obj
 
 
 def fetchKLines(symbol: str, interval: str, limit: str):  # 通用请求k线函数
@@ -115,17 +119,9 @@ def fetchData():
         return close
 
 
-precision = get_contract_info(symbol=symbol)
-print(f"价格精度 precision: {precision}")
+precision, contract_size = get_contract_info(symbol=symbol).values()
+print(f"价格精度: {precision}, contract_size: {contract_size}")
 
-balanceRes = accountClient.get_balance_valuation({"valuation_asset": 'USD'})
-print(f"当前权益: {balanceRes}")
-
-
-if not balanceRes == None and balanceRes.get('status') == 'ok':
-    x = math.floor(float(balanceRes.get('data')[0].get('balance')) / 100)
-    base = (1 if x == 0 else x) * 1
-    print(f"base: {base}")
 
 close = fetchData()
 
@@ -133,6 +129,22 @@ print(f"first: {close}")
 
 if close == 0:
     sys.exit(os.EX_OK)
+
+init_margin = (close * contract_size) / lever_rate
+sum_margin = sum(bs[:max_cnt]) * init_margin
+ratio = math.floor(1 / sum_margin)
+
+print(f"init_margin: {init_margin}, 最大开仓占用权益:{sum_margin}, ratio: {ratio}")
+
+
+balanceRes = accountClient.get_balance_valuation({"valuation_asset": 'USD'})
+print(f"当前权益: {balanceRes}")
+
+if not balanceRes == None and balanceRes.get('status') == 'ok':
+    x = math.floor(float(balanceRes.get('data')[0].get('balance')) / 100)
+    base = (1 if x == 0 else x) * (1 if ratio == 0 else ratio)
+    print(f"base: {base}")
+
 
 price_lists = np.array([close])
 
@@ -190,7 +202,6 @@ def main():  # 定时监控订单状态
 
         timer.cancel()
         sys.exit(os.EX_OK)
-
 
     if close_order_id != '':  # 查看平仓订单状态
         result = cross_get_order_info(symbol=symbol, order_id=close_order_id)
