@@ -7,6 +7,9 @@
 pm2 start martingale_monitor.py --name martingale_monitor --interpreter python3
 
 
+pm2 start trend_monitor.py --name trend_monitor --interpreter python3
+
+
 
 pm2 需要通过 -- 作为分隔符 区别 程序内部的参数
 

@@ -4,6 +4,9 @@ from threading import Timer
 from huobi.linear_swap.rest import account, market, order
 from config.main import ACCESS_KEY, SECRET_KEY
 
+Name = '_trend'
+direction = ['buy', 'sell']
+
 
 class RepeatTimer(Timer):
     def run(self):
@@ -78,10 +81,22 @@ def pm2_status():
     return result
 
 
+def has_task(pm2, name: str):  # 存在该类型任务的计数
+    cnt = 0
+
+    for key in pm2:
+        if name in key:
+            cnt += 1
+
+    return cnt
+
+
 def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: str, margin_call: str, close_call: str, access_key: str, secret_key: str):
     pm2 = pm2_status()
-    print(f"pm2: {pm2}")
-    if not pm2.get(name) == None:
+    cnt = has_task(pm2, Name)
+    print(f"pm2: {pm2}, {Name} cnt: {cnt}")
+
+    if not pm2.get(name) == None or cnt >= 20:
         return
 
     print('启动任务', name, symbol.upper(), max_cnt, direction,
@@ -165,92 +180,16 @@ def main(symbol: str, lever_rate: str):
     print(f"middle: {middle}")
     print(f"last: {klines[-1]}")
 
-    if change > 8:
-        if max_index - min_index >= 6:  # 最大值和最小值的间隔必须要大于6根k线，过滤急拉急跌的行情
-            maxv = max_index
-            minv = max_index
-            isOpen = False
-            if len(klines) == max_index + 1:
-                print('当前k线就是最大值，直接开启马丁')
-                isOpen = True
-            else:
-                for i in range(max_index + 1, len(klines)):
-                    # print(klines[i])
-                    maxv = maxv if klines[maxv].get(
-                        'high') > klines[i].get('high') else i
-                    minv = minv if klines[minv].get(
-                        'low') < klines[i].get('low') else i
-
-                print(f"maxv: {maxv}, minv: {minv}")
-                print(
-                    f"maxv_kline: {klines[maxv]}, minv_kline: {klines[minv]}")
-                se_high = klines[maxv].get('high')
-                se_low = klines[minv].get('low')
-                se_change = ((se_high - se_low) / se_low) * 100
-                print(f"se_change: {se_change}")
-
-                if se_change / change <= 1/2:
-                    print(f'次级振幅小于{change / 2}%， 开启多头马丁')
-                    isOpen = True
-
-            if isOpen == True:
-                print('开启马丁~~~~')
-                run_task(name=f"{symbol}_buy_martingale", symbol=symbol, max_cnt=5, direction='buy', lever_rate=lever_rate,
-                         margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.03,0.02,0.01,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
-            elif isOpen == False:
-                print('未满足条件, 终止马丁')
-                stop_task(name=f"{symbol}_buy_martingale",
-                          symbol=symbol)
-
-        elif min_index - max_index >= 6:
-            maxv = min_index
-            minv = min_index
-            isOpen = False
-            if len(klines) == min_index + 1:
-                print('当前k线就是最小值，直接开启马丁')
-                isOpen = True
-            else:
-                for i in range(min_index + 1, len(klines)):
-                    # print(klines[i])
-                    maxv = maxv if klines[maxv].get(
-                        'high') > klines[i].get('high') else i
-                    minv = minv if klines[minv].get(
-                        'low') < klines[i].get('low') else i
-
-                print(f"maxv: {maxv}, minv: {minv}")
-                print(
-                    f"maxv_kline: {klines[maxv]}, minv_kline: {klines[minv]}")
-                se_high = klines[maxv].get('high')
-                se_low = klines[minv].get('low')
-                se_change = ((se_high - se_low) / se_low) * 100
-                print(f"se_change: {se_change}")
-
-                if se_change / change <= 1/2:
-                    print(f'次级振幅小于{change / 2}%， 开启空头马丁')
-                    isOpen = True
-
-            if isOpen == True:
-                print('开启马丁~~~~')
-                run_task(name=f"{symbol}_sell_martingale", symbol=symbol, max_cnt=5, direction='sell', lever_rate=lever_rate,
-                         margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.03,0.02,0.01,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
-            elif isOpen == False:
-                print('未满足条件, 终止马丁')
-                stop_task(name=f"{symbol}_sell_martingale",
-                          symbol=symbol)
-
-        else:
-            print('未知情况，终止交易')
-            stop_task(name=f"{symbol}_buy_martingale",
-                      symbol=symbol)
-            stop_task(name=f"{symbol}_sell_martingale",
-                      symbol=symbol)
+    if change < 5:
+        print('开启马丁~~~~')
+        for dn in direction:
+            run_task(name=f"{symbol}_{dn}{Name}", symbol=symbol, max_cnt=5, direction=dn, lever_rate=lever_rate,
+                     margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.01,0.008,0.005,0.002,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
 
     else:
-        print('震荡行情，关闭多/空马丁')
-        stop_task(name=f"{symbol}_buy_martingale",
-                  symbol=symbol)
-        stop_task(name=f"{symbol}_sell_martingale",
-                  symbol=symbol)
+        print(f'change 大于 {change}, 关闭多/空马丁')
+        for dn in direction:
+            stop_task(name=f"{symbol}_{dn}{Name}", symbol=symbol)
 
 
 symbols = get_contract_info()
