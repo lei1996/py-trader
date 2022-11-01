@@ -132,7 +132,7 @@ if close == 0:
 
 init_margin = (close * contract_size) / lever_rate
 sum_margin = sum(bs[:max_cnt]) * init_margin
-ratio = math.floor(1 / sum_margin)
+ratio = math.floor(1.5 / sum_margin)
 
 print(f"init_margin: {init_margin}, 最大开仓占用权益:{sum_margin}, ratio: {ratio}")
 
