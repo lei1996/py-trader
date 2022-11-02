@@ -4,6 +4,8 @@ from threading import Timer
 from huobi.linear_swap.rest import account, market, order
 from config.linairx001 import ACCESS_KEY, SECRET_KEY
 
+Name = '_martingale'
+
 
 class RepeatTimer(Timer):
     def run(self):
@@ -78,10 +80,22 @@ def pm2_status():
     return result
 
 
+def has_task(pm2, name: str):  # 存在该类型任务的计数
+    cnt = 0
+
+    for key in pm2:
+        if name in key:
+            cnt += 1
+
+    return cnt
+
+
 def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: str, margin_call: str, close_call: str, access_key: str, secret_key: str):
     pm2 = pm2_status()
-    print(f"pm2: {pm2}")
-    if not pm2.get(name) == None:
+    cnt = has_task(pm2, Name)
+    print(f"pm2: {pm2}, {Name} cnt: {cnt}")
+
+    if not pm2.get(name) == None or cnt >= 20:
         return
 
     print('启动任务', name, symbol.upper(), max_cnt, direction,
@@ -196,11 +210,11 @@ def main(symbol: str, lever_rate: str):
 
             if isOpen == True:
                 print('开启马丁~~~~')
-                run_task(name=f"{symbol}_buy_martingale", symbol=symbol, max_cnt=5, direction='buy', lever_rate=lever_rate,
+                run_task(name=f"{symbol}_buy{Name}", symbol=symbol, max_cnt=5, direction='buy', lever_rate=lever_rate,
                          margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.03,0.02,0.01,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
             elif isOpen == False:
                 print('未满足条件, 终止马丁')
-                stop_task(name=f"{symbol}_buy_martingale",
+                stop_task(name=f"{symbol}_buy{Name}",
                           symbol=symbol)
 
         elif min_index - max_index >= 6:
@@ -232,25 +246,25 @@ def main(symbol: str, lever_rate: str):
 
             if isOpen == True:
                 print('开启马丁~~~~')
-                run_task(name=f"{symbol}_sell_martingale", symbol=symbol, max_cnt=5, direction='sell', lever_rate=lever_rate,
+                run_task(name=f"{symbol}_sell{Name}", symbol=symbol, max_cnt=5, direction='sell', lever_rate=lever_rate,
                          margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.03,0.02,0.01,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
             elif isOpen == False:
                 print('未满足条件, 终止马丁')
-                stop_task(name=f"{symbol}_sell_martingale",
+                stop_task(name=f"{symbol}_sell{Name}",
                           symbol=symbol)
 
         else:
             print('未知情况，终止交易')
-            stop_task(name=f"{symbol}_buy_martingale",
+            stop_task(name=f"{symbol}_buy{Name}",
                       symbol=symbol)
-            stop_task(name=f"{symbol}_sell_martingale",
+            stop_task(name=f"{symbol}_sell{Name}",
                       symbol=symbol)
 
     else:
         print('震荡行情，关闭多/空马丁')
-        stop_task(name=f"{symbol}_buy_martingale",
+        stop_task(name=f"{symbol}_buy{Name}",
                   symbol=symbol)
-        stop_task(name=f"{symbol}_sell_martingale",
+        stop_task(name=f"{symbol}_sell{Name}",
                   symbol=symbol)
 
 
