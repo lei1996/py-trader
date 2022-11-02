@@ -110,15 +110,16 @@ def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: s
                     '--access_key',
                     access_key,
                     '--secret_key',
-                    secret_key, ])
+                    secret_key,
+                    '--timeout',
+                    '30'])
 
 
 def stop_task(name: str, symbol: str):  # 终止任务
     pm2 = pm2_status()
-    if pm2.get(name) == None:
-        return
+    if not pm2.get(name) == None:
+        subprocess.run(['pm2', 'delete', name])  # pm2 删除任务
 
-    subprocess.run(['pm2', 'delete', name])  # pm2 删除任务
     cancelAllRes = cross_cancel_all(
         symbol=symbol.upper() + '-USDT')
     print(f"撤销该品种所有挂单: {cancelAllRes}")

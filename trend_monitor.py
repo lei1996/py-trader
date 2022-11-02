@@ -130,10 +130,9 @@ def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: s
 
 def stop_task(name: str, symbol: str):  # 终止任务
     pm2 = pm2_status()
-    if pm2.get(name) == None:
-        return
+    if not pm2.get(name) == None:
+        subprocess.run(['pm2', 'delete', name])  # pm2 删除任务
 
-    subprocess.run(['pm2', 'delete', name])  # pm2 删除任务
     cancelAllRes = cross_cancel_all(
         symbol=symbol.upper() + '-USDT')
     print(f"撤销该品种所有挂单: {cancelAllRes}")
@@ -180,11 +179,11 @@ def main(symbol: str, lever_rate: str):
     print(f"middle: {middle}")
     print(f"last: {klines[-1]}")
 
-    if change < 5:
+    if change < 3:
         print('开启马丁~~~~')
         for dn in direction:
             run_task(name=f"{symbol}_{dn}{Name}", symbol=symbol, max_cnt=5, direction=dn, lever_rate=lever_rate,
-                     margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.01,0.008,0.005,0.002,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
+                     margin_call='0.0,0.0025,0.005,0.0075,0.01', close_call='0.01,0.0075,0.005,0.0025,0.0', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
 
     else:
         print(f'change 大于 {change}, 关闭多/空马丁')

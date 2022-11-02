@@ -15,6 +15,7 @@ parser.add_argument('--margin_call', help='跌 | 涨 x% 补仓, 0.01, 0.02, 0.03
 parser.add_argument('--close_call', help='获利多少平仓 0.01, 0.02, 0.03')
 parser.add_argument('--access_key', help='access_key', default='')
 parser.add_argument('--secret_key', help='secret_key', default='')
+parser.add_argument('--timeout', help='挂单超时重启 http轮训次数', type=int, default=0)
 parser.add_argument('--lever_rate', help='杠杆倍数', type=int, default=20)
 args = parser.parse_args()
 
@@ -24,6 +25,7 @@ direction = args.direction
 lever_rate = args.lever_rate
 ACCESS_KEY = args.access_key
 SECRET_KEY = args.secret_key
+timeout = args.timeout
 margin_call = [float(item) for item in args.margin_call.split(',')]
 close_call = [float(item) for item in args.close_call.split(',')]
 bs = [1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192][:max_cnt]
@@ -196,7 +198,7 @@ def main():  # 定时监控订单状态
         f"当前状态, curr: {curr}, time_cnt: {time_cnt}, open_order_id: {open_order_id}, close_order_id: {close_order_id}")
     time_cnt += 1
 
-    if time_cnt >= 30 and curr == 1:
+    if not timeout == 0 and time_cnt >= timeout and curr == 1:
         cancelRes = cross_cancel(symbol=symbol, order_id=open_order_id)
         print(f"第一次挂单长时间没有成交，撤掉重启服务: {cancelRes}, ")
 
