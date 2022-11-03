@@ -261,7 +261,7 @@ print(f"pm2: {pm2}")
 for item in old_pm2:
     if not any(x.get('name') == item for x in pm2):
         print(f"需要delete的service: {item}")
-        stop_task(name=item.get('name'), symbol=item.get('symbol'))
+        stop_task(name=item, symbol=item.split('_')[0].lower())
 
 for item in pm2:
     if not any(x == item for x in old_pm2):
