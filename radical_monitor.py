@@ -201,9 +201,9 @@ def main(symbol: str, lever_rate: str):
                     isOpen = True
 
             if isOpen == True:
-                result['name'] = f"{symbol}_buy{Name}"
+                result['name'] = f"{symbol}_sell{Name}"
                 result['symbol'] = symbol
-                result['direction'] = 'buy'
+                result['direction'] = 'sell'
                 result['lever_rate'] = lever_rate
 
         elif min_index - max_index >= 6:
@@ -233,9 +233,9 @@ def main(symbol: str, lever_rate: str):
                     isOpen = True
 
             if isOpen == True:
-                result['name'] = f"{symbol}_sell{Name}"
+                result['name'] = f"{symbol}_buy{Name}"
                 result['symbol'] = symbol
-                result['direction'] = 'sell'
+                result['direction'] = 'buy'
                 result['lever_rate'] = lever_rate
 
     return (isOpen, result)
@@ -264,7 +264,7 @@ for item in old_pm2:
         stop_task(name=item, symbol=item.split('_')[0].lower())
 
 for item in pm2:
-    if not any(x == item for x in old_pm2):
+    if not any(x == item.get('name') for x in old_pm2):
         print(f"需要create的service: {item}")
         run_task(name=item.get('name'), symbol=item.get('symbol'), max_cnt=5, direction=item.get('direction'), lever_rate=item.get('lever_rate'),
                  margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.03,0.02,0.01,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
