@@ -10,6 +10,9 @@ pm2 start martingale_monitor.py --name martingale_monitor --interpreter python3
 pm2 start trend_monitor.py --name trend_monitor --interpreter python3
 
 
+pm2 start radical_monitor.py --name radical_monitor --interpreter python3
+
+
 
 pm2 需要通过 -- 作为分隔符 区别 程序内部的参数
 
@@ -20,3 +23,6 @@ pm2 需要通过 -- 作为分隔符 区别 程序内部的参数
 
 还是用原有的模式操作
 先计算列表  然后每5秒钟监控一次k线
+
+
+radical 激进策略，找出市场change 最大的5个品种， 关闭其他未达标的品种

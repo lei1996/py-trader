@@ -75,27 +75,16 @@ def pm2_status():
 
     for item in json.loads(out.stdout):
         # print(item.get('name'), item.get('pm2_env').get('status'))
-        result[item.get('name')] = item.get('pm2_env').get('status')
+        if Name in item.get('name'):
+            result[item.get('name')] = item.get('pm2_env').get('status')
 
     return result
 
 
-def has_task(pm2, name: str):  # 存在该类型任务的计数
-    cnt = 0
-
-    for key in pm2:
-        if name in key:
-            cnt += 1
-
-    return cnt
-
-
 def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: str, margin_call: str, close_call: str, access_key: str, secret_key: str):
     pm2 = pm2_status()
-    cnt = has_task(pm2, Name)
-    print(f"pm2: {pm2}, {Name} cnt: {cnt}")
 
-    if not pm2.get(name) == None or cnt >= 20:
+    if not pm2.get(name) == None:
         return
 
     print('启动任务', name, symbol.upper(), max_cnt, direction,
@@ -167,8 +156,8 @@ def main(symbol: str, lever_rate: str):
         min_index = min_index if klines[min_index].get(
             'low') < klines[i].get('low') else i
 
-    print(f"max: {klines[max_index]}, min: {klines[min_index]}")
-    print(f"max_index: {max_index}, min_index: {min_index}")
+    # print(f"max: {klines[max_index]}, min: {klines[min_index]}")
+    # print(f"max_index: {max_index}, min_index: {min_index}")
 
     high = klines[max_index].get('high')
     low = klines[min_index].get('low')
@@ -180,13 +169,17 @@ def main(symbol: str, lever_rate: str):
     print(f"middle: {middle}")
     print(f"last: {klines[-1]}")
 
+    isOpen = False  # 是否开启
+    result = {
+        "change": change
+    }
+
     if change > 8:
         if max_index - min_index >= 6:  # 最大值和最小值的间隔必须要大于6根k线，过滤急拉急跌的行情
             maxv = max_index
             minv = max_index
-            isOpen = False
+
             if len(klines) == max_index + 1:
-                print('当前k线就是最大值，直接开启马丁')
                 isOpen = True
             else:
                 for i in range(max_index + 1, len(klines)):
@@ -196,33 +189,28 @@ def main(symbol: str, lever_rate: str):
                     minv = minv if klines[minv].get(
                         'low') < klines[i].get('low') else i
 
-                print(f"maxv: {maxv}, minv: {minv}")
-                print(
-                    f"maxv_kline: {klines[maxv]}, minv_kline: {klines[minv]}")
+                # print(f"maxv: {maxv}, minv: {minv}")
+                # print(
+                #     f"maxv_kline: {klines[maxv]}, minv_kline: {klines[minv]}")
                 se_high = klines[maxv].get('high')
                 se_low = klines[minv].get('low')
                 se_change = ((se_high - se_low) / se_low) * 100
-                print(f"se_change: {se_change}")
+                # print(f"se_change: {se_change}")
 
                 if se_change / change <= 1/2:
-                    print(f'次级振幅小于{change / 2}%， 开启多头马丁')
                     isOpen = True
 
             if isOpen == True:
-                print('开启马丁~~~~')
-                run_task(name=f"{symbol}_buy{Name}", symbol=symbol, max_cnt=5, direction='buy', lever_rate=lever_rate,
-                         margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.03,0.02,0.01,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
-            elif isOpen == False:
-                print('未满足条件, 终止马丁')
-                stop_task(name=f"{symbol}_buy{Name}",
-                          symbol=symbol)
+                result['name'] = f"{symbol}_buy{Name}"
+                result['symbol'] = symbol
+                result['direction'] = 'buy'
+                result['lever_rate'] = lever_rate
 
         elif min_index - max_index >= 6:
             maxv = min_index
             minv = min_index
-            isOpen = False
+
             if len(klines) == min_index + 1:
-                print('当前k线就是最小值，直接开启马丁')
                 isOpen = True
             else:
                 for i in range(min_index + 1, len(klines)):
@@ -232,45 +220,51 @@ def main(symbol: str, lever_rate: str):
                     minv = minv if klines[minv].get(
                         'low') < klines[i].get('low') else i
 
-                print(f"maxv: {maxv}, minv: {minv}")
-                print(
-                    f"maxv_kline: {klines[maxv]}, minv_kline: {klines[minv]}")
+                # print(f"maxv: {maxv}, minv: {minv}")
+                # print(
+                #     f"maxv_kline: {klines[maxv]}, minv_kline: {klines[minv]}")
                 se_high = klines[maxv].get('high')
                 se_low = klines[minv].get('low')
                 se_change = ((se_high - se_low) / se_low) * 100
                 print(f"se_change: {se_change}")
 
                 if se_change / change <= 1/2:
-                    print(f'次级振幅小于{change / 2}%， 开启空头马丁')
+                    # print(f'次级振幅小于{change / 2}%， 开启空头马丁')
                     isOpen = True
 
             if isOpen == True:
-                print('开启马丁~~~~')
-                run_task(name=f"{symbol}_sell{Name}", symbol=symbol, max_cnt=5, direction='sell', lever_rate=lever_rate,
-                         margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.03,0.02,0.01,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
-            elif isOpen == False:
-                print('未满足条件, 终止马丁')
-                stop_task(name=f"{symbol}_sell{Name}",
-                          symbol=symbol)
+                result['name'] = f"{symbol}_sell{Name}"
+                result['symbol'] = symbol
+                result['direction'] = 'sell'
+                result['lever_rate'] = lever_rate
 
-        else:
-            print('未知情况，终止交易')
-            stop_task(name=f"{symbol}_buy{Name}",
-                      symbol=symbol)
-            stop_task(name=f"{symbol}_sell{Name}",
-                      symbol=symbol)
-
-    else:
-        print('震荡行情，关闭多/空马丁')
-        stop_task(name=f"{symbol}_buy{Name}",
-                  symbol=symbol)
-        stop_task(name=f"{symbol}_sell{Name}",
-                  symbol=symbol)
+    return (isOpen, result)
 
 
 symbols = get_contract_info()
+old_pm2 = pm2_status()  # 旧的 pm2 列表
 
+result = []
 for item in symbols:
     symbol, lever_rate = item.values()
-    print(f'服务运行中: symbol: {symbol}, lever_rate: {lever_rate}')
-    main(symbol, int(lever_rate))
+    print(f'当前 symbol: {symbol}, lever_rate: {lever_rate}')
+    isOpen, x = main(symbol, int(lever_rate))
+    if isOpen == True:
+        result.append(x)
+
+
+result.sort(key=lambda x: x.get('change'))
+pm2 = result[-5:]  # 新的候选者列表
+print(f"old_pm2: {old_pm2}")
+print(f"pm2: {pm2}")
+
+for item in old_pm2:
+    if not any(x.get('name') == item for x in pm2):
+        print(f"需要delete的service: {item}")
+        stop_task(name=item.get('name'), symbol=item.get('symbol'))
+
+for item in pm2:
+    if not any(x == item for x in old_pm2):
+        print(f"需要create的service: {item}")
+        run_task(name=item.get('name'), symbol=item.get('symbol'), max_cnt=5, direction=item.get('direction'), lever_rate=item.get('lever_rate'),
+                 margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.03,0.02,0.01,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
