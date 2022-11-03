@@ -181,6 +181,10 @@ def main(symbol: str, lever_rate: str):
 
             if len(klines) == max_index + 1:
                 isOpen = True
+                result['name'] = f"{symbol}_buy{Name}"
+                result['symbol'] = symbol
+                result['direction'] = 'buy'
+                result['lever_rate'] = lever_rate
             else:
                 for i in range(max_index + 1, len(klines)):
                     # print(klines[i])
@@ -189,7 +193,7 @@ def main(symbol: str, lever_rate: str):
                     minv = minv if klines[minv].get(
                         'low') < klines[i].get('low') else i
 
-                # print(f"maxv: {maxv}, minv: {minv}")
+                print(f"maxv: {maxv}, minv: {minv}")
                 # print(
                 #     f"maxv_kline: {klines[maxv]}, minv_kline: {klines[minv]}")
                 se_high = klines[maxv].get('high')
@@ -199,12 +203,14 @@ def main(symbol: str, lever_rate: str):
 
                 if se_change / change <= 1/2:
                     isOpen = True
-
-            if isOpen == True:
-                result['name'] = f"{symbol}_sell{Name}"
-                result['symbol'] = symbol
-                result['direction'] = 'sell'
-                result['lever_rate'] = lever_rate
+                    result['symbol'] = symbol
+                    result['lever_rate'] = lever_rate
+                    if len(klines) == minv + 1:
+                        result['name'] = f"{symbol}_sell{Name}"
+                        result['direction'] = 'sell'
+                    else:
+                        result['name'] = f"{symbol}_buy{Name}"
+                        result['direction'] = 'buy'
 
         elif min_index - max_index >= 6:
             maxv = min_index
@@ -212,6 +218,10 @@ def main(symbol: str, lever_rate: str):
 
             if len(klines) == min_index + 1:
                 isOpen = True
+                result['name'] = f"{symbol}_sell{Name}"
+                result['symbol'] = symbol
+                result['direction'] = 'sell'
+                result['lever_rate'] = lever_rate
             else:
                 for i in range(min_index + 1, len(klines)):
                     # print(klines[i])
@@ -220,7 +230,7 @@ def main(symbol: str, lever_rate: str):
                     minv = minv if klines[minv].get(
                         'low') < klines[i].get('low') else i
 
-                # print(f"maxv: {maxv}, minv: {minv}")
+                print(f"maxv: {maxv}, minv: {minv}")
                 # print(
                 #     f"maxv_kline: {klines[maxv]}, minv_kline: {klines[minv]}")
                 se_high = klines[maxv].get('high')
@@ -231,12 +241,14 @@ def main(symbol: str, lever_rate: str):
                 if se_change / change <= 1/2:
                     # print(f'次级振幅小于{change / 2}%， 开启空头马丁')
                     isOpen = True
-
-            if isOpen == True:
-                result['name'] = f"{symbol}_buy{Name}"
-                result['symbol'] = symbol
-                result['direction'] = 'buy'
-                result['lever_rate'] = lever_rate
+                    result['symbol'] = symbol
+                    result['lever_rate'] = lever_rate
+                    if len(klines) == maxv + 1:
+                        result['name'] = f"{symbol}_buy{Name}"
+                        result['direction'] = 'buy'
+                    else:
+                        result['name'] = f"{symbol}_sell{Name}"
+                        result['direction'] = 'sell'
 
     return (isOpen, result)
 
