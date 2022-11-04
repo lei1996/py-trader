@@ -145,7 +145,7 @@ def main(symbol: str, lever_rate: str):
     klines = []
 
     if result == None or len(result.get('data')) == 0:
-        return
+        return (False, {})
 
     klines = result.get('data')
     print(f"当前k线len {len(klines)}")
@@ -177,7 +177,7 @@ def main(symbol: str, lever_rate: str):
     if change > 8:
         if max_index - min_index >= 6:  # 最大值和最小值的间隔必须要大于6根k线，过滤急拉急跌的行情
             maxv = max_index
-            minv = max_index
+            minv = max_index + 1
 
             if len(klines) == max_index + 1:
                 isOpen = True
@@ -199,13 +199,13 @@ def main(symbol: str, lever_rate: str):
                 se_high = klines[maxv].get('high')
                 se_low = klines[minv].get('low')
                 se_change = ((se_high - se_low) / se_low) * 100
-                # print(f"se_change: {se_change}")
+                print(f"se_change: {se_change}")
 
                 if se_change / change <= 1/2:
                     isOpen = True
                     result['symbol'] = symbol
                     result['lever_rate'] = lever_rate
-                    if len(klines) == minv + 1:
+                    if len(klines) == minv + 1 and (max_index + 1 != minv or se_low <= klines[max_index].get('low')):
                         result['name'] = f"{symbol}_sell{Name}"
                         result['direction'] = 'sell'
                     else:
@@ -213,7 +213,7 @@ def main(symbol: str, lever_rate: str):
                         result['direction'] = 'buy'
 
         elif min_index - max_index >= 6:
-            maxv = min_index
+            maxv = min_index + 1
             minv = min_index
 
             if len(klines) == min_index + 1:
@@ -243,7 +243,8 @@ def main(symbol: str, lever_rate: str):
                     isOpen = True
                     result['symbol'] = symbol
                     result['lever_rate'] = lever_rate
-                    if len(klines) == maxv + 1:
+                    # min_index + 1 != maxv or se_high >= klines[min_index].get('high')
+                    if len(klines) == maxv + 1 and (min_index + 1 != maxv or se_high >= klines[min_index].get('high')):
                         result['name'] = f"{symbol}_buy{Name}"
                         result['direction'] = 'buy'
                     else:
