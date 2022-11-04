@@ -280,4 +280,4 @@ for item in pm2:
     if not any(x == item.get('name') for x in old_pm2):
         print(f"需要create的service: {item}")
         run_task(name=item.get('name'), symbol=item.get('symbol'), max_cnt=5, direction=item.get('direction'), lever_rate=item.get('lever_rate'),
-                 margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.03,0.02,0.01,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
+                 margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.01,0.01,0.01,0.01,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
