@@ -2,7 +2,7 @@ import subprocess
 import json
 from threading import Timer
 from huobi.linear_swap.rest import account, market, order
-from config.main import ACCESS_KEY, SECRET_KEY
+from config.linairx001 import ACCESS_KEY, SECRET_KEY
 
 Name = '_martingale'
 
@@ -115,7 +115,7 @@ def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: s
                     '--secret_key',
                     secret_key,
                     '--timeout',
-                    '30'])
+                    '5'])
 
 
 def stop_task(name: str, symbol: str):  # 终止任务
@@ -145,7 +145,7 @@ def main(symbol: str, lever_rate: str):
     klines = []
 
     if result == None or len(result.get('data')) == 0:
-        return
+        return (False, {})
 
     klines = result.get('data')
     print(f"当前k线len {len(klines)}")
@@ -177,10 +177,15 @@ def main(symbol: str, lever_rate: str):
     if change > 8:
         if max_index - min_index >= 6:  # 最大值和最小值的间隔必须要大于6根k线，过滤急拉急跌的行情
             maxv = max_index
-            minv = max_index
+            minv = max_index + 1
 
-            if len(klines) == max_index + 1:
+            if len(klines) - max_index <= 2:
+                print(f"len(klines) - max_index <= 2: {len(klines) - max_index}")
                 isOpen = True
+                result['name'] = f"{symbol}_buy{Name}"
+                result['symbol'] = symbol
+                result['direction'] = 'buy'
+                result['lever_rate'] = lever_rate
             else:
                 for i in range(max_index + 1, len(klines)):
                     # print(klines[i])
@@ -189,29 +194,37 @@ def main(symbol: str, lever_rate: str):
                     minv = minv if klines[minv].get(
                         'low') < klines[i].get('low') else i
 
-                # print(f"maxv: {maxv}, minv: {minv}")
+                print(f"maxv: {maxv}, minv: {minv}")
                 # print(
                 #     f"maxv_kline: {klines[maxv]}, minv_kline: {klines[minv]}")
                 se_high = klines[maxv].get('high')
                 se_low = klines[minv].get('low')
                 se_change = ((se_high - se_low) / se_low) * 100
-                # print(f"se_change: {se_change}")
+                print(f"se_change: {se_change}")
 
                 if se_change / change <= 1/2:
                     isOpen = True
-
-            if isOpen == True:
-                result['name'] = f"{symbol}_buy{Name}"
-                result['symbol'] = symbol
-                result['direction'] = 'buy'
-                result['lever_rate'] = lever_rate
+                    result['symbol'] = symbol
+                    result['lever_rate'] = lever_rate
+                    if len(klines) - minv > 2:
+                        print(f"klines len - minv: {len(klines) - minv}")
+                        result['name'] = f"{symbol}_buy{Name}"
+                        result['direction'] = 'buy'
+                    else:
+                        result['name'] = f"{symbol}_sell{Name}"
+                        result['direction'] = 'sell'
 
         elif min_index - max_index >= 6:
-            maxv = min_index
+            maxv = min_index + 1
             minv = min_index
 
-            if len(klines) == min_index + 1:
+            if len(klines) - min_index <= 2:
+                print(f"len(klines) - min_index <= 2: {len(klines) - min_index}")
                 isOpen = True
+                result['name'] = f"{symbol}_sell{Name}"
+                result['symbol'] = symbol
+                result['direction'] = 'sell'
+                result['lever_rate'] = lever_rate
             else:
                 for i in range(min_index + 1, len(klines)):
                     # print(klines[i])
@@ -220,7 +233,7 @@ def main(symbol: str, lever_rate: str):
                     minv = minv if klines[minv].get(
                         'low') < klines[i].get('low') else i
 
-                # print(f"maxv: {maxv}, minv: {minv}")
+                print(f"maxv: {maxv}, minv: {minv}")
                 # print(
                 #     f"maxv_kline: {klines[maxv]}, minv_kline: {klines[minv]}")
                 se_high = klines[maxv].get('high')
@@ -231,12 +244,16 @@ def main(symbol: str, lever_rate: str):
                 if se_change / change <= 1/2:
                     # print(f'次级振幅小于{change / 2}%， 开启空头马丁')
                     isOpen = True
-
-            if isOpen == True:
-                result['name'] = f"{symbol}_sell{Name}"
-                result['symbol'] = symbol
-                result['direction'] = 'sell'
-                result['lever_rate'] = lever_rate
+                    result['symbol'] = symbol
+                    result['lever_rate'] = lever_rate
+                    # min_index + 1 != maxv or se_high >= klines[min_index].get('high')
+                    if len(klines) - maxv > 2:
+                        print(f"len(klines) - maxv: {len(klines) - maxv}")
+                        result['name'] = f"{symbol}_sell{Name}"
+                        result['direction'] = 'sell'
+                    else:
+                        result['name'] = f"{symbol}_buy{Name}"
+                        result['direction'] = 'buy'
 
     return (isOpen, result)
 
@@ -267,4 +284,4 @@ for item in pm2:
     if not any(x == item.get('name') for x in old_pm2):
         print(f"需要create的service: {item}")
         run_task(name=item.get('name'), symbol=item.get('symbol'), max_cnt=5, direction=item.get('direction'), lever_rate=item.get('lever_rate'),
-                 margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.05,0.03,0.02,0.01,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
+                 margin_call='0.0,0.01,0.01,0.01,0.01', close_call='0.005,0.004,0.003,0.002,0.00', access_key=ACCESS_KEY, secret_key=SECRET_KEY)
