@@ -205,7 +205,7 @@ def main(symbol: str, lever_rate: str):
                     isOpen = True
                     result['symbol'] = symbol
                     result['lever_rate'] = lever_rate
-                    if len(klines) == minv + 1 and (max_index + 1 != minv or se_low <= klines[max_index].get('low')):
+                    if len(klines) == minv + 1 max_index + 1 != minv:
                         result['name'] = f"{symbol}_sell{Name}"
                         result['direction'] = 'sell'
                     else:
@@ -244,7 +244,7 @@ def main(symbol: str, lever_rate: str):
                     result['symbol'] = symbol
                     result['lever_rate'] = lever_rate
                     # min_index + 1 != maxv or se_high >= klines[min_index].get('high')
-                    if len(klines) == maxv + 1 and (min_index + 1 != maxv or se_high >= klines[min_index].get('high')):
+                    if len(klines) == maxv + 1 and min_index + 1 != maxv:
                         result['name'] = f"{symbol}_buy{Name}"
                         result['direction'] = 'buy'
                     else:
