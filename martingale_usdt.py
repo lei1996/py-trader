@@ -104,6 +104,22 @@ def cross_cancel(symbol: str, order_id: str):  # 撤单
     })
 
 
+def cross_get_position_info(symbol: str, direction: str):  # 当前用户持仓
+    print(
+        f"当前品种 symbol: {symbol}")
+    result = accountClient.cross_get_position_info({
+        "contract_code": symbol
+    })
+    print(f"position: {result}")
+    position = {}
+
+    if not result == None and len(result.get('data')) > 0:
+        position = [x for x in result.get(
+            'data') if x.get('direction') == direction][0]
+
+    return position
+
+
 def cross_get_order_info(symbol: str, order_id: str):  # 查询订单状态
     print(
         f"查询订单状态 symbol: {symbol}, order_id: {order_id}")
@@ -227,7 +243,10 @@ def main():  # 定时监控订单状态
                 cancelRes = cross_cancel(
                     symbol=symbol, order_id=close_order_id)
                 print(f"close_order_id 不为空 先撤单 {cancelRes}")
-            orderRes = order(symbol=symbol, volume=sum(bs[:curr]), offset='close', direction=str(
+            position = cross_get_position_info(
+                symbol=symbol, direction=direction)
+            print(f"position当前用户开仓: {position}")
+            orderRes = order(symbol=symbol, volume=int(position.get('available')), offset='close', direction=str(
                 np.where(direction == 'buy', 'sell', 'buy')), price=close_lists[curr - 1].round(precision))
             print(f"平仓 订单挂单: {orderRes}, ")
             if not orderRes == None and orderRes.get('status') == 'ok':
