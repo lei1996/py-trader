@@ -115,7 +115,7 @@ def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: s
                     '--secret_key',
                     secret_key,
                     '--timeout',
-                    '30'])
+                    '5'])
 
 
 def stop_task(name: str, symbol: str):  # 终止任务
@@ -179,7 +179,8 @@ def main(symbol: str, lever_rate: str):
             maxv = max_index
             minv = max_index + 1
 
-            if len(klines) == max_index + 1:
+            if len(klines) - max_index <= 2:
+                print(f"len(klines) - max_index <= 2: {len(klines) - max_index}")
                 isOpen = True
                 result['name'] = f"{symbol}_buy{Name}"
                 result['symbol'] = symbol
@@ -205,18 +206,20 @@ def main(symbol: str, lever_rate: str):
                     isOpen = True
                     result['symbol'] = symbol
                     result['lever_rate'] = lever_rate
-                    if len(klines) == minv + 1 and max_index + 1 != minv:
-                        result['name'] = f"{symbol}_sell{Name}"
-                        result['direction'] = 'sell'
-                    else:
+                    if len(klines) - minv > 2:
+                        print(f"klines len - minv: {len(klines) - minv}")
                         result['name'] = f"{symbol}_buy{Name}"
                         result['direction'] = 'buy'
+                    else:
+                        result['name'] = f"{symbol}_sell{Name}"
+                        result['direction'] = 'sell'
 
         elif min_index - max_index >= 6:
             maxv = min_index + 1
             minv = min_index
 
-            if len(klines) == min_index + 1:
+            if len(klines) - min_index <= 2:
+                print(f"len(klines) - min_index <= 2: {len(klines) - min_index}")
                 isOpen = True
                 result['name'] = f"{symbol}_sell{Name}"
                 result['symbol'] = symbol
@@ -244,12 +247,13 @@ def main(symbol: str, lever_rate: str):
                     result['symbol'] = symbol
                     result['lever_rate'] = lever_rate
                     # min_index + 1 != maxv or se_high >= klines[min_index].get('high')
-                    if len(klines) == maxv + 1 and min_index + 1 != maxv:
-                        result['name'] = f"{symbol}_buy{Name}"
-                        result['direction'] = 'buy'
-                    else:
+                    if len(klines) - maxv > 2:
+                        print(f"len(klines) - maxv: {len(klines) - maxv}")
                         result['name'] = f"{symbol}_sell{Name}"
                         result['direction'] = 'sell'
+                    else:
+                        result['name'] = f"{symbol}_buy{Name}"
+                        result['direction'] = 'buy'
 
     return (isOpen, result)
 
