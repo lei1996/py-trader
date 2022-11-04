@@ -205,7 +205,7 @@ def main(symbol: str, lever_rate: str):
                     isOpen = True
                     result['symbol'] = symbol
                     result['lever_rate'] = lever_rate
-                    if len(klines) == minv + 1 max_index + 1 != minv:
+                    if len(klines) == minv + 1 and max_index + 1 != minv:
                         result['name'] = f"{symbol}_sell{Name}"
                         result['direction'] = 'sell'
                     else:
