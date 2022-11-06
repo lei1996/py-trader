@@ -243,10 +243,10 @@ def main():  # 定时监控订单状态
                 cancelRes = cross_cancel(
                     symbol=symbol, order_id=close_order_id)
                 print(f"close_order_id 不为空 先撤单 {cancelRes}")
-            position = cross_get_position_info(
-                symbol=symbol, direction=direction)
-            print(f"position当前用户开仓: {position}")
-            orderRes = order(symbol=symbol, volume=int(position.get('available')), offset='close', direction=str(
+            # position = cross_get_position_info(
+            #     symbol=symbol, direction=direction)
+            # print(f"position当前用户开仓: {position}")
+            orderRes = order(symbol=symbol, volume=sum(bs[:curr]), offset='close', direction=str(
                 np.where(direction == 'buy', 'sell', 'buy')), price=close_lists[curr - 1].round(precision))
             print(f"平仓 订单挂单: {orderRes}, ")
             if not orderRes == None and orderRes.get('status') == 'ok':

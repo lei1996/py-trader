@@ -97,6 +97,8 @@ def run_task(name: str, symbol: str, max_cnt: str, direction: str, lever_rate: s
                     name,
                     '--interpreter',
                     'python3',
+                    '--restart-delay',
+                    '3000',
                     '--',
                     '--symbol',
                     symbol.upper(),
@@ -150,6 +152,19 @@ def main(symbol: str, lever_rate: str):
     klines = result.get('data')
     print(f"当前k线len {len(klines)}")
 
+    inject = []
+    for kline in klines[-2:]:
+        open = kline.get('open')
+        high = kline.get('high')
+        low = kline.get('low')
+        close = kline.get('close')
+        change = ((high - low) / low) * 100
+        trend = 1 if close > open else -1
+        inject.append({
+            "change": change,
+            "trend": trend
+        })
+
     for i in range(1, len(klines)):
         max_index = max_index if klines[max_index].get(
             'high') > klines[i].get('high') else i
@@ -174,13 +189,21 @@ def main(symbol: str, lever_rate: str):
         "change": change
     }
 
+    x1, x2 = inject
+    print(f"inject: {inject}")
+
+    if x1.get('change') > 5 and x2.get('change') > 5 and x1.get('trend') != x2.get('trend'):
+        print(f"狗庄打针，快跑")
+        return (isOpen, result)
+
     if change > 8 and change < 30:
         if max_index - min_index >= 6:  # 最大值和最小值的间隔必须要大于6根k线，过滤急拉急跌的行情
             maxv = max_index
             minv = max_index + 1
 
             if len(klines) - max_index <= 2:
-                print(f"len(klines) - max_index <= 2: {len(klines) - max_index}")
+                print(
+                    f"len(klines) - max_index <= 2: {len(klines) - max_index}")
                 isOpen = True
                 result['name'] = f"{symbol}_buy{Name}"
                 result['symbol'] = symbol
@@ -219,7 +242,8 @@ def main(symbol: str, lever_rate: str):
             minv = min_index
 
             if len(klines) - min_index <= 2:
-                print(f"len(klines) - min_index <= 2: {len(klines) - min_index}")
+                print(
+                    f"len(klines) - min_index <= 2: {len(klines) - min_index}")
                 isOpen = True
                 result['name'] = f"{symbol}_sell{Name}"
                 result['symbol'] = symbol
