@@ -4,7 +4,7 @@ from threading import Timer
 from huobi.linear_swap.rest import account, market, order
 from config.main import ACCESS_KEY, SECRET_KEY
 
-Name = '_radical'
+Name = '_radical_hb'
 
 
 class RepeatTimer(Timer):
@@ -174,7 +174,7 @@ def main(symbol: str, lever_rate: str):
         "change": change
     }
 
-    if change > 8:
+    if change > 8 and change < 30:
         if max_index - min_index >= 6:  # 最大值和最小值的间隔必须要大于6根k线，过滤急拉急跌的行情
             maxv = max_index
             minv = max_index + 1
