@@ -10,7 +10,7 @@ pm2 start martingale_monitor.py --name martingale_monitor --interpreter python3
 pm2 start trend_monitor.py --name trend_monitor --interpreter python3
 
 
-pm2 start radical_monitor.py --name radical_monitor --interpreter python3
+pm2 start radical_monitor.py --name radical_monitor_hb --interpreter python3
 
 
 

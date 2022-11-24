@@ -1,6 +1,6 @@
 
 from huobi.linear_swap.rest import account, market, order
-from config.linairx001 import ACCESS_KEY, SECRET_KEY
+from config.main import ACCESS_KEY, SECRET_KEY
 
 
 client = market.Market()

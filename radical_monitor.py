@@ -299,6 +299,10 @@ pm2 = result[-5:]  # 新的候选者列表
 print(f"old_pm2: {old_pm2}")
 print(f"pm2: {pm2}")
 
+# for item in old_pm2:
+#     print(f"需要delete的service: {item}")
+#     stop_task(name=item, symbol=item.split('_')[0].lower())
+
 for item in old_pm2:
     if not any(x.get('name') == item for x in pm2):
         print(f"需要delete的service: {item}")
